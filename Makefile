@@ -16,7 +16,8 @@
 RAG_CONTENT_IMAGE ?= $(shell grep '^RAG_CONTENT_IMAGE=' env/default-values.env | cut -d= -f2-)
 QUESTION_VALIDATION_TAG ?= 0.1.17
 QUESTION_VALIDATION_URL ?= https://raw.githubusercontent.com/lightspeed-core/lightspeed-providers/refs/tags/$(QUESTION_VALIDATION_TAG)/resources/external_providers/inline/safety/lightspeed_question_validity.yaml
-COMPOSE ?= podman compose
+CONTAINER_ENGINE ?= podman
+COMPOSE ?= $(CONTAINER_ENGINE) compose
 WITH_SAFETY ?= true
 
 ENV_FILES := --env-file env/default-values.env
@@ -39,12 +40,13 @@ default: help
 
 .PHONY: get-rag
 get-rag: ## Download a copy of the RAG embedding model and vector database
-	podman create --replace --name tmp-rag-container $(RAG_CONTENT_IMAGE) true
+	@$(CONTAINER_ENGINE) rm tmp-rag-container 2>/dev/null || true
+	$(CONTAINER_ENGINE) create --name tmp-rag-container $(RAG_CONTENT_IMAGE) true
 	rm -rf rag-content
 	mkdir -p rag-content
-	podman cp tmp-rag-container:/rag/vector_db rag-content
-	podman cp tmp-rag-container:/rag/embeddings_model rag-content
-	podman rm tmp-rag-container
+	$(CONTAINER_ENGINE) cp tmp-rag-container:/rag/vector_db rag-content
+	$(CONTAINER_ENGINE) cp tmp-rag-container:/rag/embeddings_model rag-content
+	$(CONTAINER_ENGINE) rm tmp-rag-container
 
 .PHONY: local-up
 local-up:
