@@ -1,0 +1,67 @@
+#
+#
+# Copyright Red Hat
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Smoke Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - rhdh-*
+
+jobs:
+  compose-smoke-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Log in to registry.redhat.io
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: registry.redhat.io
+          username: ${{ secrets.QUAY_REGISTRY_USERNAME }}
+          password: ${{ secrets.QUAY_REGISTRY_PASSWORD }}
+
+      - name: Create env/values.env
+        run: cp env/default-values.env env/values.env
+
+      - name: Fetch RAG content
+        run: make get-rag CONTAINER_ENGINE=docker
+
+      - name: Start services
+        run: docker compose --env-file env/default-values.env -f compose/compose.yaml up -d --wait --wait-timeout 120
+
+      - name: Verify llama-stack models
+        run: |
+          response=$(curl -fsS http://localhost:8321/v1/models)
+          echo "llama-stack models: $response"
+          echo "$response" | grep -q 'sentence-transformers'
+
+      - name: Verify lightspeed-core models
+        run: |
+          response=$(curl -fsS http://localhost:8080/v1/models)
+          echo "lightspeed-core models: $response"
+          echo "$response" | grep -q 'sentence-transformers'
+
+      - name: Collect logs on failure
+        if: failure()
+        run: docker compose --env-file env/default-values.env -f compose/compose.yaml logs
+
+      - name: Teardown services
+        if: always()
+        run: docker compose --env-file env/default-values.env -f compose/compose.yaml down
