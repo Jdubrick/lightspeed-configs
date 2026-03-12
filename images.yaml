@@ -18,7 +18,7 @@ lightspeed-core:
   image: quay.io/lightspeed-core/lightspeed-stack:dev-20260226-ca21850
 llama-stack:
   llama_version: 0.4.3
-  image: registry.redhat.io/rhoai/odh-llama-stack-core-rhel9:v3.3
+  image: quay.io/opendatahub/llama-stack:rhoai-v3.3-latest
 rag-content:
   llama_version: 0.4.3
   image: quay.io/redhat-ai-dev/rag-content:release-1.9-lls-0.4.3

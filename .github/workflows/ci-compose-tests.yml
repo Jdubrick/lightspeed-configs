@@ -30,13 +30,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - name: Log in to registry.redhat.io
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          registry: registry.redhat.io
-          username: ${{ secrets.QUAY_REGISTRY_USERNAME }}
-          password: ${{ secrets.QUAY_REGISTRY_PASSWORD }}
-
       - name: Create env/values.env
         run: cp env/default-values.env env/values.env
 
