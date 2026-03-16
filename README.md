@@ -1,8 +1,8 @@
 # Redhat-AI-Dev Llama Stack
 
 [![Apache2.0 License](https://img.shields.io/badge/license-Apache2.0-brightgreen.svg)](LICENSE)
-[![Llama Stack Version](https://img.shields.io/badge/Llama%20Stack-0.4.3-blue)](#version-table)
-[![RHDH Release](https://img.shields.io/badge/RHDH%20Release-1.10-blueviolet)](#version-table)
+[![Llama Stack Version](https://img.shields.io/badge/Llama%20Stack-0.5.x-blue)]()
+[![RHDH Release](https://img.shields.io/badge/RHDH%20Release-1.10-blueviolet)]()
 
 ## Versions
 

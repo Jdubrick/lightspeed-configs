@@ -34,11 +34,13 @@ make local-up
 
 This starts Llama Stack, Lightspeed Core, and Ollama (for Llama Guard). Compose enforces startup order: Ollama healthy -> Llama Stack healthy -> Lightspeed Core starts.
 
-To disable safety guards:
+To run without safety guards:
 
 ```sh
 make local-up WITH_SAFETY=false
 ```
+
+See [Configuring Safety Guards](#configuring-safety-guards) for all available options including remote safety endpoints.
 
 4. Stop services:
 
@@ -69,21 +71,62 @@ vector_stores:
     vector_store_id: vs_3d47e06c-ac95-49b6-9833-d5e6dd7252dd
 ```
 
-You will need the `vector_store_id` value. After copying that value you will need to update `run.yaml` and `run-no-guard.yaml`. The `vector_store_id` you copied will replace the `vector_store_id` in those files.
+You will need the `vector_store_id` value. After copying that value you will need to update `run.yaml`. The `vector_store_id` you copied will replace the `vector_store_id` in that file.
 
 
 
 ## Configuring Safety Guards
 
-By default (`WITH_SAFETY=true`), `make local-up` uses `llama-stack-configs/run.yaml` which has Llama Guard enabled. The compose overlay starts an Ollama container and pulls the safety model automatically.
+Safety is controlled by the `ENABLE_SAFETY` environment variable in the Llama Stack run config (`run.yaml`). When set, it activates the safety provider, registers the guard model, and creates the shield. When empty, all safety entries are filtered out at startup.
 
-To skip safety guards for development, use `WITH_SAFETY=false` which uses `llama-stack-configs/run-no-guard.yaml` instead.
+There are three ways to run depending on your safety needs:
 
-Relevant environment variables in `env/values.env`:
+### 1. Without safety guards
 
-- `SAFETY_MODEL`: Llama Guard model name. Defaults to `llama-guard3:8b`
-- `SAFETY_URL`: Endpoint URL. Defaults to `http://host.docker.internal:11434/v1`
-- `SAFETY_API_KEY`: API key, not required for local
+No Ollama container, no safety provider. Useful for fast local development.
+
+```sh
+make local-up WITH_SAFETY=false
+```
+
+No additional environment variables are required. `ENABLE_SAFETY` stays empty in `env/default-values.env` and the safety entries in `run.yaml` are skipped.
+
+### 2. With a local safety guard (Ollama)
+
+Starts a local Ollama container that pulls and serves the Llama Guard model automatically.
+
+```sh
+make local-up
+```
+
+`WITH_SAFETY` defaults to `true`, which includes the `compose.ollama.yaml` overlay. This overlay starts the Ollama service and sets `ENABLE_SAFETY=true` on the Llama Stack container, overriding the empty default from your env file.
+
+| Variable | Default | Description |
+| ---- | ---- | ---- |
+| `ENABLE_SAFETY` | Set to `true` automatically by the compose overlay | Activates safety providers in `run.yaml` |
+| `SAFETY_MODEL` | `llama-guard3:8b` | Llama Guard model name pulled by Ollama |
+| `SAFETY_URL` | `http://ollama:11434/v1` | Points to the Ollama compose service |
+| `SAFETY_API_KEY` | *(empty)* | Not required for local Ollama |
+
+### 3. With a remote safety guard
+
+Use a Llama Guard model hosted elsewhere (e.g. vLLM on OpenShift) without running a local Ollama container.
+
+```sh
+make local-up WITH_SAFETY=false
+```
+
+Set the following in `env/values.env`:
+
+| Variable | Required | Description |
+| ---- | ---- | ---- |
+| `ENABLE_SAFETY` | Yes, set to `true` | Activates safety providers in `run.yaml` |
+| `SAFETY_URL` | Yes | URL of the remote safety model endpoint |
+| `SAFETY_MODEL` | If different from default | Model name. Defaults to `llama-guard3:8b` |
+| `SAFETY_API_KEY` | If the endpoint requires auth | API key for the remote service |
+
+> [!NOTE]
+> In this scenario `WITH_SAFETY=false` is used because there is no need for a local Ollama container -- the safety provider in `run.yaml` is activated by `ENABLE_SAFETY=true` in your `values.env` and points to the remote URL.
 
 ## Syncing Configs
 
@@ -131,7 +174,7 @@ make update-question-validation QUESTION_VALIDATION_TAG=0.1.17
 | Command | Description |
 | ---- | ---- |
 | `get-rag` | Pull and unpack RAG content into `./rag-content` (replaces existing contents). Optional: `RAG_CONTENT_IMAGE=<image>`. |
-| `local-up` | Start local compose services. Default: `WITH_SAFETY=true` (uses `run.yaml`). Set `WITH_SAFETY=false` to use `run-no-guard.yaml`. |
+| `local-up` | Start local compose services. Default: `WITH_SAFETY=true` (starts Ollama and enables safety). Set `WITH_SAFETY=false` to skip the local Ollama container. |
 | `local-down` | Stop local compose services. |
 | `sync-images` | Sync image values from `images.yaml` into `env/default-values.env`. Requires `yq`. |
 | `validate-images` | Validate that `images.yaml` and `env/default-values.env` are in sync. Requires `yq`. |
