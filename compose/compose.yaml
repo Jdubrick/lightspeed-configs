@@ -21,9 +21,9 @@ services:
     env_file:
       - ../env/values.env
     environment:
-      RUN_CONFIG_PATH: /app-root/run.yaml
+      RUN_CONFIG_PATH: /app-root/config.yaml
     volumes:
-      - ../llama-stack-configs/run.yaml:/app-root/run.yaml:ro
+      - ../llama-stack-configs/config.yaml:/app-root/config.yaml:ro
       - ../rag-content:/rag-content
     healthcheck:
       test:

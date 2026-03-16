@@ -71,13 +71,13 @@ vector_stores:
     vector_store_id: vs_3d47e06c-ac95-49b6-9833-d5e6dd7252dd
 ```
 
-You will need the `vector_store_id` value. After copying that value you will need to update `run.yaml`. The `vector_store_id` you copied will replace the `vector_store_id` in that file.
+You will need the `vector_store_id` value. After copying that value you will need to update `config.yaml`. The `vector_store_id` you copied will replace the `vector_store_id` in that file.
 
 
 
 ## Configuring Safety Guards
 
-Safety is controlled by the `ENABLE_SAFETY` environment variable in the Llama Stack run config (`run.yaml`). When set, it activates the safety provider, registers the guard model, and creates the shield. When empty, all safety entries are filtered out at startup.
+Safety is controlled by the `ENABLE_SAFETY` environment variable in the Llama Stack config (`config.yaml`). When set, it activates the safety provider, registers the guard model, and creates the shield. When empty, all safety entries are filtered out at startup.
 
 There are three ways to run depending on your safety needs:
 
@@ -89,7 +89,7 @@ No Ollama container, no safety provider. Useful for fast local development.
 make local-up WITH_SAFETY=false
 ```
 
-No additional environment variables are required. `ENABLE_SAFETY` stays empty in `env/default-values.env` and the safety entries in `run.yaml` are skipped.
+No additional environment variables are required. `ENABLE_SAFETY` stays empty in `env/default-values.env` and the safety entries in `config.yaml` are skipped.
 
 ### 2. With a local safety guard (Ollama)
 
@@ -103,7 +103,7 @@ make local-up
 
 | Variable | Default | Description |
 | ---- | ---- | ---- |
-| `ENABLE_SAFETY` | Set to `true` automatically by the compose overlay | Activates safety providers in `run.yaml` |
+| `ENABLE_SAFETY` | Set to `true` automatically by the compose overlay | Activates safety providers in `config.yaml` |
 | `SAFETY_MODEL` | `llama-guard3:8b` | Llama Guard model name pulled by Ollama |
 | `SAFETY_URL` | `http://ollama:11434/v1` | Points to the Ollama compose service |
 | `SAFETY_API_KEY` | *(empty)* | Not required for local Ollama |
@@ -120,13 +120,13 @@ Set the following in `env/values.env`:
 
 | Variable | Required | Description |
 | ---- | ---- | ---- |
-| `ENABLE_SAFETY` | Yes, set to `true` | Activates safety providers in `run.yaml` |
+| `ENABLE_SAFETY` | Yes, set to `true` | Activates safety providers in `config.yaml` |
 | `SAFETY_URL` | Yes | URL of the remote safety model endpoint |
 | `SAFETY_MODEL` | If different from default | Model name. Defaults to `llama-guard3:8b` |
 | `SAFETY_API_KEY` | If the endpoint requires auth | API key for the remote service |
 
 > [!NOTE]
-> In this scenario `WITH_SAFETY=false` is used because there is no need for a local Ollama container -- the safety provider in `run.yaml` is activated by `ENABLE_SAFETY=true` in your `values.env` and points to the remote URL.
+> In this scenario `WITH_SAFETY=false` is used because there is no need for a local Ollama container -- the safety provider in `config.yaml` is activated by `ENABLE_SAFETY=true` in your `values.env` and points to the remote URL.
 
 ## Syncing Configs
 
