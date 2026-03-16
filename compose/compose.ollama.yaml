@@ -19,7 +19,7 @@ services:
       ollama:
         condition: service_healthy
     environment:
-      RUN_CONFIG_PATH: /app-root/run.yaml
+      ENABLE_SAFETY: "true"
 
   ollama:
     image: ${OLLAMA_IMAGE}
