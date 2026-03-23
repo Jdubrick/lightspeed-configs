@@ -54,3 +54,5 @@ jobs:
           run: bash scripts/validate-images.sh
         - name: Validate compose config sync
           run: bash scripts/validate-compose-config.sh
+        - name: Validate rhdh-profile sync
+          run: bash scripts/validate-rhdh-profile.sh

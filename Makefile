@@ -104,6 +104,14 @@ sync-compose-config: ## Sync compose lightspeed-stack config from lightspeed-cor
 validate-compose-config: ## Validate compose lightspeed-stack config is in sync with source
 	bash scripts/validate-compose-config.sh
 
+.PHONY: sync-rhdh-profile
+sync-rhdh-profile: ## Sync rhdh-profile.py prompt from upstream source
+	bash scripts/sync-rhdh-profile.sh
+
+.PHONY: validate-rhdh-profile
+validate-rhdh-profile: ## Validate rhdh-profile.py prompt is in sync with upstream source
+	bash scripts/validate-rhdh-profile.sh
+
 .PHONY: validate-yaml
 validate-yaml:
 	yarn verify
