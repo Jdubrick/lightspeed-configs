@@ -6,7 +6,6 @@
 - [Configuring Safety Guards](#configuring-safety-guards)
 - [Syncing Configs](#syncing-configs)
   - [Syncing Images](#syncing-images)
-  - [Syncing Compose Config](#syncing-compose-config)
 - [Formatting and Validating YAML](#formatting-and-validating-yaml)
 - [Makefile Commands](#makefile-commands)
 - [Troubleshooting](#troubleshooting)
@@ -32,12 +31,14 @@ make get-rag
 make local-up
 ```
 
-This starts Llama Stack, Lightspeed Core, and Ollama (for Llama Guard). Compose enforces startup order: Ollama healthy -> Llama Stack healthy -> Lightspeed Core starts.
+This starts Lightspeed Core. If `WITH_SAFETY=true` (default), it also starts Ollama for Llama Guard and waits for it to be healthy before Lightspeed Core starts.
 
-Lightspeed Core uses two mounted config files in local compose:
+Lightspeed Core uses mounted config/content in local compose:
 
-- `compose/lightspeed-stack.compose.yaml` -> `/app-root/lightspeed-stack.yaml`
+- `lightspeed-core-configs/lightspeed-stack.yaml` -> `/app-root/lightspeed-stack.yaml`
 - `lightspeed-core-configs/rhdh-profile.py` -> `/app-root/rhdh-profile.py`
+- `llama-stack-configs/config.yaml` -> `/app-root/config.yaml`
+- `rag-content/` -> `/rag-content`
 
 To run without safety guards:
 
@@ -82,7 +83,7 @@ You will need the `vector_store_id` value. After copying that value you will nee
 
 ## Configuring Safety Guards
 
-Safety is controlled by the `ENABLE_SAFETY` environment variable in the Llama Stack config (`config.yaml`). When set, it activates the safety provider, registers the guard model, and creates the shield. When empty, all safety entries are filtered out at startup.
+Safety is controlled by the `ENABLE_SAFETY` environment variable in `llama-stack-configs/config.yaml`. When set, it activates the safety provider, registers the guard model, and creates the shield. When empty, all safety entries are filtered out at startup.
 
 There are three ways to run depending on your safety needs:
 
@@ -104,7 +105,7 @@ Starts a local Ollama container that pulls and serves the Llama Guard model auto
 make local-up
 ```
 
-`WITH_SAFETY` defaults to `true`, which includes the `compose.ollama.yaml` overlay. This overlay starts the Ollama service and sets `ENABLE_SAFETY=true` on the Llama Stack container, overriding the empty default from your env file.
+`WITH_SAFETY` defaults to `true`, which includes the `compose.ollama.yaml` overlay. This overlay starts the Ollama service and sets `ENABLE_SAFETY=true` on the Lightspeed Core container, overriding the empty default from your env file.
 
 | Variable | Default | Description |
 | ---- | ---- | ---- |
@@ -135,7 +136,7 @@ Set the following in `env/values.env`:
 
 ## Syncing Configs
 
-This repository has sync scripts that keep derived files consistent with their sources. CI validates these on every PR -- if they drift, the PR will fail.
+This repository has sync scripts that keep generated values consistent with their sources. CI validates these on every PR -- if they drift, the PR will fail.
 
 ### Syncing Images
 
@@ -147,19 +148,7 @@ After updating `images.yaml`:
 make sync-images
 ```
 
-This reads the `image` field for each service in `images.yaml` and updates the corresponding env vars (`LIGHTSPEED_CORE_IMAGE`, `LLAMA_STACK_IMAGE`, `RAG_CONTENT_IMAGE`) in `env/default-values.env`.
-
-### Syncing Compose Config
-
-`compose/lightspeed-stack.compose.yaml` is derived from `lightspeed-core-configs/lightspeed-stack.yaml`. The only difference is the `llama_stack.url` -- the compose version uses the Docker Compose service name (`http://llama-stack:8321`) instead of localhost.
-
-After updating `lightspeed-core-configs/lightspeed-stack.yaml`:
-
-```sh
-make sync-compose-config
-```
-
-`make sync-compose-config` only regenerates `compose/lightspeed-stack.compose.yaml`. It does not manage compose volume mounts in `compose/compose.yaml`.
+This reads the `image` field for each service in `images.yaml` and updates the corresponding env vars (`LIGHTSPEED_CORE_IMAGE`, `RAG_CONTENT_IMAGE`) in `env/default-values.env`.
 
 `lightspeed-core-configs/rhdh-profile.py` is maintained directly in this repository (not synced from upstream). Keep `customization.profile_path` in `lightspeed-core-configs/lightspeed-stack.yaml` aligned with the mount path configured in `compose/compose.yaml` (`/app-root/rhdh-profile.py`).
 
@@ -187,8 +176,6 @@ make update-question-validation QUESTION_VALIDATION_TAG=0.1.17
 | `local-down` | Stop local compose services. |
 | `sync-images` | Sync image values from `images.yaml` into `env/default-values.env`. Requires `yq`. |
 | `validate-images` | Validate that `images.yaml` and `env/default-values.env` are in sync. Requires `yq`. |
-| `sync-compose-config` | Sync `compose/lightspeed-stack.compose.yaml` from `lightspeed-core-configs/lightspeed-stack.yaml`. Requires `yq`. |
-| `validate-compose-config` | Validate that the compose config is in sync with its source. Requires `yq`. |
 | `validate-yaml` | Validate YAML formatting/syntax. |
 | `format-yaml` | Format YAML files. |
 | `update-question-validation` | Update question-validation content in `config/providers.d`. Optional: `QUESTION_VALIDATION_TAG=<tag>`. |
