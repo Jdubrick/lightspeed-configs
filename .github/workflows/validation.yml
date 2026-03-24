@@ -52,5 +52,3 @@ jobs:
             sudo chmod +x /usr/local/bin/yq
         - name: Validate image sync
           run: bash scripts/validate-images.sh
-        - name: Validate compose config sync
-          run: bash scripts/validate-compose-config.sh

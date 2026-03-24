@@ -14,38 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 services:
-  llama-stack:
-    image: ${LLAMA_STACK_IMAGE}
-    ports:
-      - "8321:8321"
-    env_file:
-      - ../env/values.env
-    environment:
-      RUN_CONFIG_PATH: /app-root/config.yaml
-    volumes:
-      - ../llama-stack-configs/config.yaml:/app-root/config.yaml:ro
-      - ../rag-content:/rag-content
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl -fsS http://127.0.0.1:8321/v1/health | grep -q '\"status\":\"OK\"'",
-        ]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-      start_period: 20s
-
   lightspeed-core:
     image: ${LIGHTSPEED_CORE_IMAGE}
-    depends_on:
-      llama-stack:
-        condition: service_healthy
     ports:
       - "8080:8080"
     volumes:
-      - ./lightspeed-stack.compose.yaml:/app-root/lightspeed-stack.yaml:ro
+      - ../lightspeed-core-configs/lightspeed-stack.yaml:/app-root/lightspeed-stack.yaml:ro
       - ../lightspeed-core-configs/rhdh-profile.py:/app-root/rhdh-profile.py:ro
+      - ../llama-stack-configs/config.yaml:/app-root/config.yaml:ro
+      - ../rag-content:/rag-content
+    env_file:
+      - ../env/values.env
     healthcheck:
       test:
         [

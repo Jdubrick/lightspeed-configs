@@ -16,9 +16,6 @@
 lightspeed-core:
   llama_version: 0.5.2
   image: quay.io/lightspeed-core/lightspeed-stack:dev-20260316-b2f54cf
-llama-stack:
-  llama_version: 0.5.0
-  image: quay.io/opendatahub/llama-stack:07a97331b3a8831e76ec15c833d2dcf6fa0a34c9
 rag-content:
   llama_version: 0.4.3
   image: quay.io/redhat-ai-dev/rag-content:release-1.9-lls-0.4.3-d0444cd9b57222ec9bdbaa36354337480a2ecf97
