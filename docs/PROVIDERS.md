@@ -37,8 +37,8 @@ OLLAMA_URL=<your-ollama-url>
 
 `OLLAMA_URL` guidance:
 
-- If Llama Stack runs directly on your host, use `http://localhost:11434`.
-- If Llama Stack runs in a container, use `http://host.containers.internal:11434`.
+- If Lightspeed Core runs directly on your host, use `http://localhost:11434`.
+- If Lightspeed Core runs in a container, use `http://host.containers.internal:11434`.
 - On Linux, you may need to open firewall access to the Podman network or run with `--network host`.
 
 ## OpenAI

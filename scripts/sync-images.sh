@@ -29,7 +29,6 @@ command -v yq >/dev/null 2>&1 || {
 
 declare -A KEY_TO_VAR=(
   ["lightspeed-core"]="LIGHTSPEED_CORE_IMAGE"
-  ["llama-stack"]="LLAMA_STACK_IMAGE"
   ["rag-content"]="RAG_CONTENT_IMAGE"
 )
 

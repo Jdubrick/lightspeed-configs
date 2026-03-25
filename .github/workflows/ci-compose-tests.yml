@@ -39,12 +39,6 @@ jobs:
       - name: Start services
         run: docker compose --env-file env/default-values.env -f compose/compose.yaml up -d --wait --wait-timeout 120
 
-      - name: Verify llama-stack models
-        run: |
-          response=$(curl -fsS http://localhost:8321/v1/models)
-          echo "llama-stack models: $response"
-          echo "$response" | grep -q 'sentence-transformers'
-
       - name: Verify lightspeed-core models
         run: |
           response=$(curl -fsS http://localhost:8080/v1/models)

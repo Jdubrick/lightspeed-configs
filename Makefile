@@ -96,14 +96,6 @@ sync-images: ## Sync image values from images.yaml into default-values.env
 validate-images: ## Validate that images.yaml and default-values.env are in sync
 	bash scripts/validate-images.sh
 
-.PHONY: sync-compose-config
-sync-compose-config: ## Sync compose lightspeed-stack config from lightspeed-core-configs
-	bash scripts/sync-compose-config.sh
-
-.PHONY: validate-compose-config
-validate-compose-config: ## Validate compose lightspeed-stack config is in sync with source
-	bash scripts/validate-compose-config.sh
-
 .PHONY: validate-yaml
 validate-yaml:
 	yarn verify
