@@ -81,6 +81,12 @@ providers:
         persistence:
           namespace: vector_io::faiss
           backend: kv_rag
+    - provider_id: notebooks
+      provider_type: inline::faiss
+      config:
+        persistence:
+          namespace: vector_io::faiss
+          backend: kv_rag
   files:
     - provider_id: localfs
       provider_type: inline::localfs
