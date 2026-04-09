@@ -23,10 +23,14 @@ import re
 import sys
 from pathlib import Path
 
-MIN_PYTHON = (3, 12)
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_FILE = REPO_ROOT / "lightspeed-core-configs" / "rhdh-profile.py"
 TARGET_FILE = REPO_ROOT / "llama-stack-configs" / "config.yaml"
+PROMPT_PLACEHOLDER_REPLACEMENTS = {
+    "{SUBJECT_ALLOWED}": "${allowed}",
+    "{SUBJECT_REJECTED}": "${rejected}",
+    "{{query}}": "${message}",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,12 +45,6 @@ def parse_args() -> argparse.Namespace:
         help="Whether to update config.yaml or validate it is already in sync.",
     )
     return parser.parse_args()
-
-
-def ensure_python_version() -> None:
-    if sys.version_info < MIN_PYTHON:
-        version = ".".join(str(part) for part in MIN_PYTHON)
-        raise SystemExit(f"Python {version}+ is required.")
 
 
 def extract_triple_quoted(
@@ -87,9 +85,8 @@ def build_updated_text(source_text: str, target_text: str) -> str:
     model_prompt = extract_triple_quoted(
         source_text, "QUESTION_VALIDATOR_PROMPT_TEMPLATE", is_fstring=True
     )
-    model_prompt = model_prompt.replace("{SUBJECT_ALLOWED}", "${allowed}")
-    model_prompt = model_prompt.replace("{SUBJECT_REJECTED}", "${rejected}")
-    model_prompt = model_prompt.replace("{{query}}", "${message}")
+    for source_value, target_value in PROMPT_PLACEHOLDER_REPLACEMENTS.items():
+        model_prompt = model_prompt.replace(source_value, target_value)
 
     invalid_response = extract_triple_quoted(source_text, "INVALID_QUERY_RESP")
 
@@ -120,7 +117,6 @@ def print_diff(current_text: str, expected_text: str) -> None:
 
 
 def main() -> int:
-    ensure_python_version()
     args = parse_args()
     source_text = SOURCE_FILE.read_text(encoding="utf-8")
     target_text = TARGET_FILE.read_text(encoding="utf-8")
