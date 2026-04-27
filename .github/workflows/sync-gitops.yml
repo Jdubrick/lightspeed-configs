@@ -20,7 +20,6 @@ on:
     branches:
       - main
     paths:
-      - "lightspeed-core-configs/lightspeed-stack.yaml"
       - "lightspeed-core-configs/rhdh-profile.py"
       - "llama-stack-configs/config.yaml"
       - "images.yaml"
@@ -58,9 +57,7 @@ jobs:
 
       - name: Copy generated manifests
         run: |
-          cp generated/lightspeed-stack-config.yaml ai-rolling-demo-gitops/charts/rhdh/templates/lightspeed-stack-config.yaml
           cp generated/llama-stack-config.yaml ai-rolling-demo-gitops/charts/rhdh/templates/llama-stack-config.yaml
-          cp generated/rolling-demo-sidecars-job.yaml ai-rolling-demo-gitops/charts/rhdh/templates/rolling-demo-sidecars-job.yaml
           cp generated/rhdh-profile.py ai-rolling-demo-gitops/charts/rhdh/rhdh-profile.py
 
       - name: Export image versions
@@ -71,9 +68,7 @@ jobs:
               in_section && /^[[:space:]]+image:/ { print $2; exit }
             ' images.yaml
           }
-          echo "LLAMA_STACK_IMAGE=$(get_image llama-stack)" >> $GITHUB_ENV
           echo "LIGHTSPEED_CORE_IMAGE=$(get_image lightspeed-core)" >> $GITHUB_ENV
-          echo "RAG_CONTENT_IMAGE=$(get_image rag-content)" >> $GITHUB_ENV
 
       - name: Open PR in ai-rolling-demo-gitops
         uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
@@ -82,14 +77,12 @@ jobs:
           path: ai-rolling-demo-gitops
           base: development
           branch: sync/lightspeed-configs
-          commit-message: "(chore): sync lightspeed - llama stack configs from lightspeed-configs@${{ github.sha }}"
+          commit-message: "(chore): sync lightspeed configs from lightspeed-configs@${{ github.sha }}"
           title: "(chore): update lightspeed configs"
           body: |
             ## PR Description
 
             Automated sync triggered from [${{ github.repository }}@${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}).
 
-            Syncs the configs of `lightspeed-stack-config.yaml`, `llama-stack-config.yaml`, `rolling-demo-sidecars-job.yaml`, and `rhdh-profile.py` with the following image versions:
-            - `llama-stack`: `${{ env.LLAMA_STACK_IMAGE }}`
+            Syncs `llama-stack-config.yaml`, `rhdh-profile.py`, and `charts/rhdh/values.yaml` with the following image version:
             - `lightspeed-core`: `${{ env.LIGHTSPEED_CORE_IMAGE }}`
-            - `rag-content`: `${{ env.RAG_CONTENT_IMAGE }}`

@@ -38,21 +38,6 @@ get_image() {
   ' "${REPO_ROOT}/images.yaml"
 }
 
-echo "Generating lightspeed-stack ConfigMap..."
-{
-  cat << 'HEADER'
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: lightspeed-stack
-  namespace: {{ .Release.Namespace }}
-data:
-  lightspeed-stack.yaml: |
-HEADER
-  strip_license "${REPO_ROOT}/lightspeed-core-configs/lightspeed-stack.yaml" \
-    | indent
-} > "${OUTPUT_DIR}/lightspeed-stack-config.yaml"
-
 echo "Generating llama-stack ConfigMap..."
 {
   cat << 'HEADER'
@@ -81,30 +66,14 @@ HEADER
 echo "Generating rhdh-profile.py..."
 cp "${REPO_ROOT}/lightspeed-core-configs/rhdh-profile.py" "${OUTPUT_DIR}/rhdh-profile.py"
 
-echo "Generating rolling-demo-sidecars-job.yaml with updated images..."
-SIDECARS_JOB_SRC="${GITOPS_REPO}/charts/rhdh/templates/rolling-demo-sidecars-job.yaml"
-if [[ ! -f "${SIDECARS_JOB_SRC}" ]]; then
-  echo "Error: ${SIDECARS_JOB_SRC} not found. Set GITOPS_REPO to your ai-rolling-demo-gitops checkout." >&2
-  exit 1
-fi
-
-LLAMA_STACK_IMAGE="$(get_image "llama-stack")"
+echo "Updating lightspeed-core sidecar image in values.yaml..."
 LIGHTSPEED_CORE_IMAGE="$(get_image "lightspeed-core")"
-RAG_CONTENT_IMAGE="$(get_image "rag-content")"
-
-sed \
-  -e "s|\"image\": \"[^\"]*/llama-stack[^\"]*\"|\"image\": \"${LLAMA_STACK_IMAGE}\"|g" \
-  -e "s|\"image\": \"[^\"]*/lightspeed-stack[^\"]*\"|\"image\": \"${LIGHTSPEED_CORE_IMAGE}\"|g" \
-  -e "s|\"image\": \"[^\"]*/rag-content[^\"]*\"|\"image\": \"${RAG_CONTENT_IMAGE}\"|g" \
-  "${SIDECARS_JOB_SRC}" > "${OUTPUT_DIR}/rolling-demo-sidecars-job.yaml"
-
-echo "Updating rag-content image in values.yaml..."
 VALUES_YAML="${GITOPS_REPO}/charts/rhdh/values.yaml"
 if [[ ! -f "${VALUES_YAML}" ]]; then
   echo "Error: ${VALUES_YAML} not found." >&2
   exit 1
 fi
-sed -i "s|image: '[^']*/rag-content[^']*'|image: '${RAG_CONTENT_IMAGE}'|g" "${VALUES_YAML}"
+sed -i "s|image: [^ ]*/lightspeed-stack[^ ]*|image: ${LIGHTSPEED_CORE_IMAGE}|g" "${VALUES_YAML}"
 
 echo "Generated manifests:"
 ls -1 "${OUTPUT_DIR}"
