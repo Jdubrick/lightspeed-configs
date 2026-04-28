@@ -8,8 +8,9 @@ SUBJECT_ALLOWED = "ALLOWED"
 
 # Default responses
 INVALID_QUERY_RESP = """
-Hi, I'm the Red Hat Developer Hub Lightspeed assistant.
+Hi, I'm the Red Hat Developer Hub (RHDH) Lightspeed assistant.
 I can help with questions related to software development, developer tooling, cloud infrastructure, and related technical topics.
+For each of these topics, RHDH (based on Backstage), serves as a portal that connects developers with relevant information on these topics.
 Please ensure your question is relevant to these areas, and feel free to ask again!
 """
 
