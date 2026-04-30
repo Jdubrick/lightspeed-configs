@@ -26,7 +26,19 @@
 make get-rag
 ```
 
-3. Start the local API stack:
+3. Sync the local config:
+
+```sh
+make sync-local-config
+```
+
+This generates `lightspeed-core-configs/lightspeed-stack-local.yaml` from `lightspeed-stack.yaml` with `service.host` set to `0.0.0.0`. The compose setup mounts this local variant into the container.
+
+The production config uses `host: 127.0.0.1` so the service only binds to loopback — making it reachable exclusively by containers in the same Pod on Kubernetes.
+
+CI validates that the local config stays in sync with the production config (the only allowed difference is `service.host`). If you modify `lightspeed-stack.yaml`, re-run `make sync-local-config` and commit both files.
+
+1. Start the local API stack:
 
 ```sh
 make local-up
@@ -36,7 +48,7 @@ This starts Lightspeed Core using the mounted config/content below.
 
 Lightspeed Core uses mounted config/content in local compose:
 
-- `lightspeed-core-configs/lightspeed-stack.yaml` -> `/app-root/lightspeed-stack.yaml`
+- `lightspeed-core-configs/lightspeed-stack-local.yaml` -> `/app-root/lightspeed-stack.yaml`
 - `lightspeed-core-configs/rhdh-profile.py` -> `/app-root/rhdh-profile.py`
 - `llama-stack-configs/config.yaml` -> `/app-root/config.yaml`
 - `rag-content/` -> `/rag-content`
@@ -159,6 +171,8 @@ make validate-yaml
 | `local-down` | Stop local compose services. |
 | `sync-images` | Sync image values from `images.yaml` into `env/default-values.env`. Requires `yq`. |
 | `validate-images` | Validate that `images.yaml` and `env/default-values.env` are in sync. Requires `yq`. |
+| `sync-local-config` | Generate `lightspeed-stack-local.yaml` from `lightspeed-stack.yaml` with `host: 0.0.0.0`. Requires `yq`. |
+| `validate-local-config` | Validate that `lightspeed-stack-local.yaml` is in sync with `lightspeed-stack.yaml`. Requires `yq`. |
 | `validate-yaml` | Validate YAML formatting/syntax. |
 | `format-yaml` | Format YAML files. |
 | `validate-prompt-templates` | Validate that the question-validation prompt values in `llama-stack-configs/config.yaml` match `lightspeed-core-configs/rhdh-profile.py`. |

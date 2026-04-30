@@ -62,3 +62,5 @@ jobs:
               echo "ERROR: Prompt templates are out of sync between lightspeed-core-configs/rhdh-profile.py and llama-stack-configs/config.yaml. Run 'make update-prompt-templates' and commit the result."
               exit 1
             fi
+        - name: Validate local config sync
+          run: bash scripts/validate-local-config.sh

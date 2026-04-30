@@ -71,6 +71,14 @@ sync-images: ## Sync image values from images.yaml into default-values.env
 validate-images: ## Validate that images.yaml and default-values.env are in sync
 	bash scripts/validate-images.sh
 
+.PHONY: sync-local-config
+sync-local-config: ## Generate lightspeed-stack-local.yaml from lightspeed-stack.yaml
+	bash scripts/sync-local-config.sh
+
+.PHONY: validate-local-config
+validate-local-config: ## Validate that lightspeed-stack-local.yaml is in sync
+	bash scripts/validate-local-config.sh
+
 .PHONY: validate-yaml
 validate-yaml:
 	yarn verify
