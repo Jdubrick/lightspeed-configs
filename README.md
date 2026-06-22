@@ -9,6 +9,7 @@
 See [images.yaml](./images.yaml) for current sprint images and versions.
 
 `main` tracks one active release at a time. Historical releases are preserved in `rhdh-x.x` branches and Git tags.
+`latest_release` field maps to the latest LCORE release in `registry.redhat.io` for use in the RHDH midstream as `dev` tags will break.
 
 ## Architecture
 
