@@ -21,6 +21,7 @@ on:
       - main
     paths:
       - "lightspeed-core-configs/rhdh-profile.py"
+      - "lightspeed-core-configs/lightspeed-stack.yaml"
       - "llama-stack-configs/config.yaml"
       - "images.yaml"
   workflow_dispatch:
@@ -58,6 +59,7 @@ jobs:
       - name: Copy generated manifests
         run: |
           cp generated/llama-stack-config.yaml ai-rolling-demo-gitops/charts/rhdh/templates/llama-stack-config.yaml
+          cp generated/lightspeed-stack-config.yaml ai-rolling-demo-gitops/charts/rhdh/templates/lightspeed-stack-config.yaml
           cp generated/rhdh-profile.py ai-rolling-demo-gitops/charts/rhdh/rhdh-profile.py
 
       - name: Export image versions
@@ -84,5 +86,5 @@ jobs:
 
             Automated sync triggered from [${{ github.repository }}@${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}).
 
-            Syncs `llama-stack-config.yaml`, `rhdh-profile.py`, and `charts/rhdh/values.yaml` with the following image version:
+            Syncs `llama-stack-config.yaml`, `lightspeed-stack-config.yaml`, `rhdh-profile.py`, and `charts/rhdh/values.yaml` with the following image version:
             - `lightspeed-core`: `${{ env.LIGHTSPEED_CORE_IMAGE }}`

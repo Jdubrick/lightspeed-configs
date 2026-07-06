@@ -50,18 +50,44 @@ data:
   config.yaml: |
 HEADER
   strip_license "${REPO_ROOT}/llama-stack-configs/config.yaml" \
-    | awk '/api_key: \$\{env\.OPENAI_API_KEY:=\}/ {
-        print
+    | indent
+} > "${OUTPUT_DIR}/llama-stack-config.yaml"
+
+echo "Generating lightspeed-stack ConfigMap..."
+{
+  cat << 'HEADER'
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: lightspeed-stack-config
+  namespace: {{ .Release.Namespace }}
+data:
+  lightspeed-stack.yaml: |
+HEADER
+  strip_license "${REPO_ROOT}/lightspeed-core-configs/lightspeed-stack.yaml" \
+    | awk '/^    - type: sentence_transformers$/ {
+        print "    - type: vllm"
+        print "      api_key_env: VLLM_API_KEY"
+        print "      extra:"
+        print "        base_url: ${env.VLLM_URL}"
+        print "        max_tokens: ${env.VLLM_MAX_TOKENS:=4096}"
+        print "        network:"
+        print "          tls:"
+        print "            verify: ${env.VLLM_TLS_VERIFY:=true}"
+        print "    - type: openai"
+        print "      api_key_env: OPENAI_API_KEY"
+        print "      extra:"
         print "        allowed_models:"
         print "          - gpt-4o-mini"
         print "          - gpt-5.1"
         print "          - gpt-4.1-mini"
         print "          - gpt-4.1-nano"
+        print
         next
       }
       { print }' \
     | indent
-} > "${OUTPUT_DIR}/llama-stack-config.yaml"
+} > "${OUTPUT_DIR}/lightspeed-stack-config.yaml"
 
 echo "Generating rhdh-profile.py..."
 cp "${REPO_ROOT}/lightspeed-core-configs/rhdh-profile.py" "${OUTPUT_DIR}/rhdh-profile.py"
