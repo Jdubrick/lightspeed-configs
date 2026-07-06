@@ -24,6 +24,12 @@ endif
 
 LOCAL_COMPOSE_FILES := -f compose/compose.yaml
 
+LIGHTSPEED_STACK_CONFIG := lightspeed-core-configs/lightspeed-stack.yaml
+ifneq ($(wildcard lightspeed-core-configs/lightspeed-stack.local.yaml),)
+LIGHTSPEED_STACK_CONFIG := lightspeed-core-configs/lightspeed-stack.local.yaml
+endif
+export LIGHTSPEED_STACK_CONFIG
+
 .PHONY: default
 default: help
 

@@ -20,6 +20,8 @@
 
 1. Copy `./env/default-values.env` to `./env/values.env` and fill in any provider-specific values (see [docs/PROVIDERS.md](./PROVIDERS.md)).
 
+   To configure inference providers without editing the git-tracked `lightspeed-stack.yaml`, copy `lightspeed-core-configs/lightspeed-stack.yaml` to `lightspeed-core-configs/lightspeed-stack.local.yaml` and make your edits there. `make local-up` mounts the `.local.yaml` file automatically when it's present, otherwise it falls back to `lightspeed-stack.yaml`. `lightspeed-stack.local.yaml` is gitignored, so it's safe to leave provider config there permanently.
+
 2. Pull the RAG content:
 
 ```sh
@@ -38,7 +40,7 @@ This starts Lightspeed Core using the mounted config/content below.
 
 Lightspeed Core uses mounted config/content in local compose:
 
-- `lightspeed-core-configs/lightspeed-stack.yaml` -> `/app-root/lightspeed-stack.yaml`
+- `lightspeed-core-configs/lightspeed-stack.yaml` (or `lightspeed-stack.local.yaml`, if present) -> `/app-root/lightspeed-stack.yaml`
 - `lightspeed-core-configs/rhdh-profile.py` -> `/app-root/rhdh-profile.py`
 - `llama-stack-configs/config.yaml` -> `/app-root/config.yaml`
 - `rag-content/` -> `/rag-content`
@@ -96,7 +98,7 @@ To enable validation, set the following in `env/values.env`:
 | `VALIDATION_PROVIDER` | Yes | Inference provider used by the validation shield, for example `vllm` or `openai` |
 | `VALIDATION_MODEL_NAME` | Yes | Model name served by the selected inference provider |
 
-You must also enable and configure the referenced inference provider. Examples:
+The referenced inference provider must also be present in `lightspeed-stack.yaml` (or `lightspeed-stack.local.yaml`) and configured via its env vars. See [docs/PROVIDERS.md](./PROVIDERS.md). Examples:
 
 ### Example: vLLM-backed validation
 
@@ -104,7 +106,6 @@ You must also enable and configure the referenced inference provider. Examples:
 ENABLE_VALIDATION=true
 VALIDATION_PROVIDER=vllm
 VALIDATION_MODEL_NAME=<your-model-name>
-ENABLE_VLLM=true
 VLLM_URL=<your-vllm-endpoint>
 VLLM_API_KEY=<api-key>
 ```
