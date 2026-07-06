@@ -8,59 +8,148 @@ Each inference has its own environment variables. You can include all of these i
 > `VLLM_API_KEY=token` (recommended)
 >
 > `VLLM_API_KEY="token"` (can cause parsing issues)
+> 
+> You will notice the `api_key_env` field is not wrapped in curly-braces `{}`. This is due to Lightspeed Core wrapping them internally to curate a proper `{env.xyz}` to pass through to Llama Stack so the keys are not exposed internally.
 
 ## vLLM
 
-Required:
+To add the `vLLM` inference provider, include the following in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml):
 
-```env
-ENABLE_VLLM=true
-VLLM_URL=<your-server-url>/v1
-VLLM_API_KEY=<your-api-key>
+```yaml
+inference:
+  providers:
+    - type: vllm
+      api_key_env: VLLM_API_KEY
+      extra:
+        base_url: ${env.VLLM_URL:=}
+        max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
+        network:
+          tls:
+            verify: ${env.VLLM_TLS_VERIFY:=true}
 ```
 
-Optional:
-
-```env
-VLLM_MAX_TOKENS=<defaults to 4096>
-VLLM_TLS_VERIFY=<defaults to true>
-```
+In order for `vLLM` to configure properly, you must include environment variables named `VLLM_API_KEY` and `VLLM_URL` to the Lightspeed Core container.
 
 ## Ollama
+> [!NOTE]
+> Currently not working with Lightspeed Core as they don't have the required Python package. RFE opened https://redhat.atlassian.net/browse/LCORE-2906
+>
 
-Required:
+To add the `ollama` inference provider, include the following in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml):
 
-```env
-ENABLE_OLLAMA=true
-OLLAMA_URL=<your-ollama-url>
+```yaml
+inference:
+  providers:
+    - type: ollama
+      extra:
+        base_url: ${env.OLLAMA_URL:=http://localhost:11434/v1}
 ```
 
 `OLLAMA_URL` guidance:
 
-- If Lightspeed Core runs directly on your host, use `http://localhost:11434`.
-- If Lightspeed Core runs in a container, use `http://host.containers.internal:11434`.
+- If Lightspeed Core runs directly on your host, use `http://localhost:11434/v1`.
+- If Lightspeed Core runs in a container, use `http://host.containers.internal:11434/v1`.
 - On Linux, you may need to open firewall access to the Podman network or run with `--network host`.
 
 ## OpenAI
 
-Required:
+To add the `openai` inference provider, include the following in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml):
 
-```env
-ENABLE_OPENAI=true
-OPENAI_API_KEY=<your-api-key>
+```yaml
+inference:
+  providers:
+    - type: openai
+      api_key_env: OPENAI_API_KEY
 ```
+
+You must pass the environment variable `OPENAI_API_KEY` to the Lightspeed Core container.
 
 Get your API key from [platform.openai.com](https://platform.openai.com/settings/organization/api-keys).
 
 ## Vertex AI (Gemini)
 
-Required:
+To add the `vertexai` inference provider, include the following in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml):
 
-```env
-ENABLE_VERTEX_AI=true
-VERTEX_AI_PROJECT=
-VERTEX_AI_LOCATION=
-GOOGLE_APPLICATION_CREDENTIALS=
+```yaml
+inference:
+  providers:
+    - type: vertexai
+      extra:
+        project: ${env.VERTEX_AI_PROJECT:=}
+        location: ${env.VERTEX_AI_LOCATION:=global}
 ```
 
-Provider details: [Llama Stack Vertex AI docs](https://llamastack.github.io/v0.2.18/providers/inference/remote_vertexai.html).
+Additionally, you need to ensure your Google Application Credentials are mounted to the Lightspeed Core container and the `GOOGLE_APPLICATION_CREDENTIALS` environment variable is the path to the mount location.
+
+Provider details: [Llama Stack (OGX) Vertex AI docs](https://ogx-ai.github.io/docs/providers/inference/remote_vertexai).
+
+## Restricting Models (`allowed_models`)
+
+Each of the providers above supports an `allowed_models` field to limit which models get registered with Llama Stack. This is most useful for `openai` and `vertexai`, since they auto-discover every model available to your account/project unless restricted.
+
+To use it, add `allowed_models` under the provider's `extra` block in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml).
+
+Open AI example:
+```yaml
+inference:
+  providers:
+    - type: openai
+      api_key_env: OPENAI_API_KEY
+      extra:
+        allowed_models:
+          - gpt-4o
+          - gpt-4o-mini
+```
+
+If `allowed_models` is omitted, all models the provider can see are registered.
+
+## Full Example
+
+```yaml
+name: lightspeed-core-stack
+service:
+  host: ${env.SERVICE_HOST:=127.0.0.1}
+  port: 8080
+  auth_enabled: false
+  workers: 1
+  color_log: true
+  access_log: true
+llama_stack:
+  use_as_library_client: true
+  config:
+    profile: /app-root/config.yaml
+inference:
+  providers:
+    - type: sentence_transformers
+    - type: openai
+      api_key_env: OPENAI_API_KEY
+      extra:
+        allowed_models:
+          - gpt-4o
+          - gpt-4o-mini
+    - type: vllm
+      api_key_env: VLLM_API_KEY
+      extra:
+        base_url: ${env.VLLM_URL:=}
+        max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
+        network:
+          tls:
+            verify: ${env.VLLM_TLS_VERIFY:=true}
+user_data_collection:
+  feedback_enabled: true
+  feedback_storage: '/tmp/data/feedback'
+authentication:
+  module: 'noop'
+conversation_cache:
+  type: 'sqlite'
+  sqlite:
+    db_path: '/tmp/cache.db'
+customization:
+  profile_path: '/app-root/rhdh-profile.py'
+mcp_servers:
+  - name: mcp-integration-tools
+    provider_id: 'model-context-protocol'
+    url: 'http://localhost:7007/api/mcp-actions/v1'
+    authorization_headers:
+      Authorization: 'client'
+```
