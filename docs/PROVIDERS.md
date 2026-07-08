@@ -32,7 +32,7 @@ In order for `vLLM` to configure properly, you must include environment variable
 
 ## Ollama
 > [!NOTE]
-> Currently not working with Lightspeed Core as they don't have the required Python package. RFE opened https://redhat.atlassian.net/browse/LCORE-2906
+> Lightspeed Core does not implement the "official" Ollama provider via Llama stack (remote::ollama), instead we can access it via the vLLM provider.
 >
 
 To add the `ollama` inference provider, include the following in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml):
@@ -40,7 +40,7 @@ To add the `ollama` inference provider, include the following in [lightspeed-sta
 ```yaml
 inference:
   providers:
-    - type: ollama
+    - type: vllm
       extra:
         base_url: ${env.OLLAMA_URL:=http://localhost:11434/v1}
 ```
