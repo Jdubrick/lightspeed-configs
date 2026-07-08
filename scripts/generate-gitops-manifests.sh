@@ -69,7 +69,7 @@ HEADER
         print "    - type: vllm"
         print "      api_key_env: VLLM_API_KEY"
         print "      extra:"
-        print "        base_url: ${env.VLLM_URL}"
+        print "        base_url: ${env.VLLM_URL:=}"
         print "        max_tokens: ${env.VLLM_MAX_TOKENS:=4096}"
         print "        network:"
         print "          tls:"
