@@ -19,6 +19,7 @@ To add the `vLLM` inference provider, include the following in [lightspeed-stack
 inference:
   providers:
     - type: vllm
+      id: <your-unique-id>
       api_key_env: VLLM_API_KEY
       extra:
         base_url: ${env.VLLM_URL:=}
@@ -41,6 +42,7 @@ To add the `ollama` inference provider, include the following in [lightspeed-sta
 inference:
   providers:
     - type: vllm
+      id: <your-unique-id>
       extra:
         base_url: ${env.OLLAMA_URL:=http://localhost:11434/v1}
 ```
@@ -59,6 +61,7 @@ To add the `openai` inference provider, include the following in [lightspeed-sta
 inference:
   providers:
     - type: openai
+      id: <your-unique-id>
       api_key_env: OPENAI_API_KEY
 ```
 
@@ -74,6 +77,7 @@ To add the `vertexai` inference provider, include the following in [lightspeed-s
 inference:
   providers:
     - type: vertexai
+      id: <your-unique-id>
       extra:
         project: ${env.VERTEX_AI_PROJECT:=}
         location: ${env.VERTEX_AI_LOCATION:=global}
@@ -94,6 +98,7 @@ Open AI example:
 inference:
   providers:
     - type: openai
+      id: <your-unique-id>
       api_key_env: OPENAI_API_KEY
       extra:
         allowed_models:
@@ -122,12 +127,14 @@ inference:
   providers:
     - type: sentence_transformers
     - type: openai
+      id: openai
       api_key_env: OPENAI_API_KEY
       extra:
         allowed_models:
           - gpt-4o
           - gpt-4o-mini
     - type: vllm
+      id: vllm-team
       api_key_env: VLLM_API_KEY
       extra:
         base_url: ${env.VLLM_URL:=}
@@ -135,6 +142,10 @@ inference:
         network:
           tls:
             verify: ${env.VLLM_TLS_VERIFY:=true}
+    - type: vllm
+      id: ollama
+      extra:
+        base_url: ${env.OLLAMA_URL:=http://localhost:11434/v1}
 user_data_collection:
   feedback_enabled: true
   feedback_storage: '/tmp/data/feedback'

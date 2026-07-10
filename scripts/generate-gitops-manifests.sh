@@ -67,6 +67,7 @@ HEADER
   strip_license "${REPO_ROOT}/lightspeed-core-configs/lightspeed-stack.yaml" \
     | awk '/^    - type: sentence_transformers$/ {
         print "    - type: vllm"
+        print "      id: vllm"
         print "      api_key_env: VLLM_API_KEY"
         print "      extra:"
         print "        base_url: ${env.VLLM_URL:=}"
@@ -75,6 +76,7 @@ HEADER
         print "          tls:"
         print "            verify: ${env.VLLM_TLS_VERIFY:=true}"
         print "    - type: openai"
+        print "      id: openai"
         print "      api_key_env: OPENAI_API_KEY"
         print "      extra:"
         print "        allowed_models:"
