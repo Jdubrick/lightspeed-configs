@@ -68,11 +68,11 @@ make get-rag RAG_CONTENT_IMAGE=quay.io/redhat-ai-dev/rag-content:<tag>
 ```
 
 > [!IMPORTANT]
-> The vector_store ID value changes whenever the RAG content is updated in the image. This means that you only need to do the below update once per image.
+> The vector store ID changes whenever the RAG content image is updated. Update `byok_rag` once per image.
 
-With Llama Stack `0.4.3` the way Vector Stores are created has changed. This means that the RAG content you download locally by running `make get-rag` contains a generated Vector Store ID. In order for RAG to work properly you need to navigate to `rag-content/vector_db/rhdh_product_docs/<docs number>/llama-stack.yaml` and find the `vector_stores` section, it should look like:
+Product docs RAG is configured in [`lightspeed-core-configs/lightspeed-stack.yaml`](../lightspeed-core-configs/lightspeed-stack.yaml) under `byok_rag` (not in the Llama Stack profile). After `make get-rag`, open `rag-content/vector_db/rhdh_product_docs/<docs number>/llama-stack.yaml` and copy `vector_store_id` from the `vector_stores` section, for example:
 
-```
+```yaml
 vector_stores:
   - embedding_dimension: 768
     embedding_model: sentence-transformers//rag-content/embeddings_model
@@ -80,9 +80,11 @@ vector_stores:
     vector_store_id: vs_3d47e06c-ac95-49b6-9833-d5e6dd7252dd
 ```
 
-You will need the `vector_store_id` value. After copying that value you will need to update `config.yaml`. The `vector_store_id` you copied will replace the `vector_store_id` in that file.
+Paste that value into `byok_rag[].vector_db_id`. Keep `embedding_model` as the double-slash form `sentence-transformers//rag-content/embeddings_model` so Llama Stack’s registry id matches the load path. Point `db_path` at the FAISS db under `./rag-content` (mounted at `/rag-content` in the container).
 
+`notebooks` is separate: it is dynamic create capacity under `vector_store` (local FAISS; GitOps rewrites it to pgvector). It is not a second `byok_rag` corpus.
 
+If you use a gitignored `lightspeed-stack.local.yaml` for local providers, copy the same `byok_rag` / `rag` / `vector_store` sections from the committed file when they change.
 
 ## Configuring Validation
 
