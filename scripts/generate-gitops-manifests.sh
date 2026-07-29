@@ -38,35 +38,27 @@ get_image() {
   ' "${REPO_ROOT}/images.yaml"
 }
 
-notebooks_faiss_to_pgvector() {
+# Rewrite high-level vector_store.providers notebooks FAISS → pgvector for cluster.
+# Llama Stack HNSW/COSINE defaults match the former low-level rewrite (D6A).
+notebooks_vector_store_faiss_to_pgvector() {
   awk '
-    /^    - provider_id: notebooks$/ {
+    /^    - id: notebooks$/ {
       skip = 1
-      print "    - provider_id: notebooks"
-      print "      provider_type: remote::pgvector"
+      print "    - id: notebooks"
+      print "      type: pgvector"
+      print "      embedding_model: /rag-content/embeddings_model"
+      print "      embedding_dimension: 768"
       print "      config:"
       print "        host: ${env.PGVECTOR_HOST:=lightspeed-postgres-svc.lightspeed-postgres.svc.cluster.local}"
       print "        port: ${env.PGVECTOR_PORT:=5432}"
       print "        db: ${env.PGVECTOR_DB}"
       print "        user: ${env.PGVECTOR_USER}"
       print "        password: ${env.PGVECTOR_PASSWORD}"
-      print "        distance_metric: COSINE"
-      print "        vector_index:"
-      print "          type: HNSW"
-      print "          m: 16"
-      print "          ef_construction: 64"
-      print "          ef_search: 40"
-      print "        persistence:"
-      print "          namespace: vector_io::pgvector"
-      print "          backend: kv_default"
       next
     }
-    skip && /^    - provider_id:/ { skip = 0 }
-    skip && /^  [a-zA-Z]/ { skip = 0 }
+    skip && /^    - id:/ { skip = 0 }
+    skip && /^[a-zA-Z]/ { skip = 0 }
     skip { next }
-    /^    kv_notebooks:$/ { skip_kv = 1; next }
-    skip_kv && /^[^ ]|^  [a-zA-Z]|^    [a-zA-Z]/ { skip_kv = 0 }
-    skip_kv { next }
     { print }
   '
 }
@@ -83,7 +75,6 @@ data:
   config.yaml: |
 HEADER
   strip_license "${REPO_ROOT}/llama-stack-configs/config.yaml" \
-    | notebooks_faiss_to_pgvector \
     | indent
 } > "${OUTPUT_DIR}/llama-stack-config.yaml"
 
@@ -99,6 +90,7 @@ data:
   lightspeed-stack.yaml: |
 HEADER
   strip_license "${REPO_ROOT}/lightspeed-core-configs/lightspeed-stack.yaml" \
+    | notebooks_vector_store_faiss_to_pgvector \
     | awk '/^    - type: sentence_transformers$/ {
         print "    - type: vllm"
         print "      id: vllm"
