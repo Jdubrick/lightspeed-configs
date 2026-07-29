@@ -27,7 +27,7 @@ llama_stack:
     profile: /app-root/config.yaml
     native_override:
       vector_stores:
-        annotation_prompt_params:
+        annotation_prompt_params: # TODO: remove this once RAG is removed
           enable_annotations: true
           annotation_instruction_template: >
             When appropriate, cite sources at the end of sentences using doc_url and doc_title format.
@@ -39,7 +39,7 @@ inference:
 byok_rag:
   - rag_id: rhdh-docs
     rag_type: inline::faiss
-    embedding_model: /rag-content/embeddings_model
+    embedding_model: sentence-transformers//rag-content/embeddings_model
     embedding_dimension: 768
     vector_db_id: vs_757285d9-b657-4bed-b18c-3359844e8c0d
     db_path: /rag-content/vector_db/rhdh_product_docs/1.10/faiss_store.db
