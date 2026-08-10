@@ -90,8 +90,6 @@ If you use a gitignored `lightspeed-stack.local.yaml` for local providers, copy 
 
 Question validation is owned by Lightspeed Core (not Llama Stack / OGX Safety). It is configured under `shields` in [`lightspeed-stack.yaml`](../lightspeed-core-configs/lightspeed-stack.yaml) as a `question_validity` shield, including the RHDH classifier `model_prompt` and `invalid_question_response`.
 
-List configured shields with `GET /v1/shields`. Clients may optionally pass `shield_ids` on `/v1/query`, `/v1/streaming_query`, and `/v1/responses` (`null` = all, `[]` = none). See the [LCORE Safety Shields Guide](https://github.com/lightspeed-core/lightspeed-stack/blob/main/docs/user_doc/shields_guide.md).
-
 Opt-in uses OGX's `__disabled__` provider skip: when `ENABLE_VALIDATION` is unset, `provider_id` defaults to `__disabled__` and the shield entry is omitted (so `VALIDATION_*` need not be set). When enabling, set `ENABLE_VALIDATION` to the shield provider id `question_validity` — not `true` (that value is no longer valid after the LCORE migration).
 
 `make local-up` does not start a validation service or inject validation defaults. If you enable validation, you must provide both `VALIDATION_PROVIDER` and `VALIDATION_MODEL_NAME` yourself in `env/values.env`.
@@ -138,7 +136,7 @@ This reads the `image` field for each service in `images.yaml` and updates the c
 
 ### Syncing Prompt Templates
 
-The question-validation `model_prompt` and `invalid_question_response` in `llama-stack-configs/config.yaml` are sourced from `lightspeed-core-configs/rhdh-profile.py`.
+The question-validation `model_prompt` and `invalid_question_response` in `lightspeed-core-configs/lightspeed-stack.yaml` (under `shields`) are sourced from `lightspeed-core-configs/rhdh-profile.py`.
 
 `make update-prompt-templates` and `make validate-prompt-templates` call `scripts/sync-prompt-templates.py` directly with `python3`. The helper requires Python 3.12+ and will exit with a clear error if invoked with an older interpreter.
 
@@ -171,8 +169,8 @@ make validate-yaml
 | `validate-images` | Validate that `images.yaml` and `env/default-values.env` are in sync. Requires `yq`. |
 | `validate-yaml` | Validate YAML formatting/syntax. |
 | `format-yaml` | Format YAML files. |
-| `validate-prompt-templates` | Validate that the question-validation prompt values in `llama-stack-configs/config.yaml` match `lightspeed-core-configs/rhdh-profile.py`. |
-| `update-prompt-templates` | Sync the question-validation prompt values in `llama-stack-configs/config.yaml` from `lightspeed-core-configs/rhdh-profile.py`. |
+| `validate-prompt-templates` | Validate that the question-validation prompt values in `lightspeed-core-configs/lightspeed-stack.yaml` match `lightspeed-core-configs/rhdh-profile.py`. |
+| `update-prompt-templates` | Sync the question-validation prompt values in `lightspeed-core-configs/lightspeed-stack.yaml` from `lightspeed-core-configs/rhdh-profile.py`. |
 
 ## Troubleshooting
 

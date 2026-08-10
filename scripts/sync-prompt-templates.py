@@ -25,7 +25,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_FILE = REPO_ROOT / "lightspeed-core-configs" / "rhdh-profile.py"
-TARGET_FILE = REPO_ROOT / "llama-stack-configs" / "config.yaml"
+TARGET_FILE = REPO_ROOT / "lightspeed-core-configs" / "lightspeed-stack.yaml"
 PROMPT_PLACEHOLDER_REPLACEMENTS = {
     "{SUBJECT_ALLOWED}": "${allowed}",
     "{SUBJECT_REJECTED}": "${rejected}",
@@ -35,14 +35,20 @@ PROMPT_PLACEHOLDER_REPLACEMENTS = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Sync question-validation prompt templates into config.yaml."
+        description=(
+            "Sync question-validation prompt templates into lightspeed-stack.yaml "
+            "(LCORE shields.question_validity)."
+        )
     )
     parser.add_argument(
         "mode",
         nargs="?",
         choices=("update", "validate"),
         default="update",
-        help="Whether to update config.yaml or validate it is already in sync.",
+        help=(
+            "Whether to update lightspeed-stack.yaml or validate it is already "
+            "in sync."
+        ),
     )
     return parser.parse_args()
 
@@ -98,7 +104,7 @@ def build_updated_text(source_text: str, target_text: str) -> str:
     )
     updated_text = replace_section(
         updated_text,
-        r"^(?P<indent>\s*)invalid_question_response: \|-\n.*?(?=^storage:)",
+        r"^(?P<indent>\s*)invalid_question_response: \|-\n.*?(?=^mcp_servers:)",
         "invalid_question_response",
         invalid_response,
     )
@@ -128,8 +134,8 @@ def main() -> int:
 
     if args.mode == "validate":
         print(
-            "Prompt templates in llama-stack-configs/config.yaml are out of sync "
-            "with lightspeed-core-configs/rhdh-profile.py."
+            "Prompt templates in lightspeed-core-configs/lightspeed-stack.yaml "
+            "are out of sync with lightspeed-core-configs/rhdh-profile.py."
         )
         print_diff(target_text, updated_text)
         print("")
@@ -138,7 +144,7 @@ def main() -> int:
 
     TARGET_FILE.write_text(updated_text, encoding="utf-8")
     print(
-        "Updated llama-stack-configs/config.yaml from "
+        "Updated lightspeed-core-configs/lightspeed-stack.yaml from "
         "lightspeed-core-configs/rhdh-profile.py"
     )
     return 0
