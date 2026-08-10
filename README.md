@@ -1,4 +1,4 @@
-# Lightspeed Configs
+# Intelligent Assistant Configurations
 
 [![Apache2.0 License](https://img.shields.io/badge/License-Apache2.0-brightgreen.svg)](LICENSE)
 [![Target LCORE Version](https://img.shields.io/badge/Target%20LCORE-0.7.0-blue)]()
