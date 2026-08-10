@@ -47,7 +47,7 @@ Lightspeed Core uses mounted config/content in local compose:
 - `llama-stack-configs/config.yaml` -> `/app-root/config.yaml`
 - `rag-content/` -> `/rag-content`
 
-Question validation is not enabled automatically. If you want it, set `ENABLE_VALIDATION`, `VALIDATION_PROVIDER`, and `VALIDATION_MODEL_NAME` in `env/values.env`, along with any env vars required by the selected inference provider.
+Question validation is not enabled automatically. If you want it, set `ENABLE_VALIDATION=question_validity`, `VALIDATION_PROVIDER`, and `VALIDATION_MODEL_NAME` in `env/values.env`, along with any env vars required by the selected inference provider.
 
 See [Configuring Validation](#configuring-validation) for example configurations.
 
@@ -84,35 +84,38 @@ Paste that value into `byok_rag[].vector_db_id`. Keep `embedding_model` as the d
 
 `notebooks` is separate: it is dynamic create capacity under `vector_store` (local FAISS; GitOps rewrites it to pgvector). It is not a second `byok_rag` corpus.
 
-If you use a gitignored `lightspeed-stack.local.yaml` for local providers, copy the same `byok_rag` / `rag` / `vector_store` sections from the committed file when they change.
+If you use a gitignored `lightspeed-stack.local.yaml` for local providers, copy the same `byok_rag` / `rag` / `vector_store` / `shields` sections from the committed file when they change.
 
 ## Configuring Validation
 
-Question validation is controlled by the `ENABLE_VALIDATION` environment variable in `llama-stack-configs/config.yaml`. When set, it activates the `lightspeed_question_validity` shield. The shield uses `VALIDATION_PROVIDER` and `VALIDATION_MODEL_NAME` to select an enabled inference provider and model.
+Question validation is owned by Lightspeed Core (not Llama Stack / OGX Safety). It is configured under `shields` in [`lightspeed-stack.yaml`](../lightspeed-core-configs/lightspeed-stack.yaml) as a `question_validity` shield, including the RHDH classifier `model_prompt` and `invalid_question_response`.
+
+List configured shields with `GET /v1/shields`. Clients may optionally pass `shield_ids` on `/v1/query`, `/v1/streaming_query`, and `/v1/responses` (`null` = all, `[]` = none). See the [LCORE Safety Shields Guide](https://github.com/lightspeed-core/lightspeed-stack/blob/main/docs/user_doc/shields_guide.md).
+
+Opt-in uses OGX's `__disabled__` provider skip: when `ENABLE_VALIDATION` is unset, `provider_id` defaults to `__disabled__` and the shield entry is omitted (so `VALIDATION_*` need not be set). When enabling, set `ENABLE_VALIDATION` to the shield provider id `question_validity` — not `true` (that value is no longer valid after the LCORE migration).
 
 `make local-up` does not start a validation service or inject validation defaults. If you enable validation, you must provide both `VALIDATION_PROVIDER` and `VALIDATION_MODEL_NAME` yourself in `env/values.env`.
 
-If `ENABLE_VALIDATION` is empty, validation is disabled and no additional configuration is required.
-
-To enable validation, set the following in `env/values.env`:
-
 | Variable | Required | Description |
 | ---- | ---- | ---- |
-| `ENABLE_VALIDATION` | Yes, set to `true` | Activates the validation shield in `config.yaml` |
-| `VALIDATION_PROVIDER` | Yes | Inference provider used by the validation shield, for example `vllm` or `openai` |
-| `VALIDATION_MODEL_NAME` | Yes | Model name served by the selected inference provider |
+| `ENABLE_VALIDATION` | Yes, set to `question_validity` | Activates the LCORE `shields` entry (unset → disabled) |
+| `VALIDATION_PROVIDER` | Yes, when enabling | Inference provider id used in `model_id` (`provider/model`), for example `vllm` or `openai` |
+| `VALIDATION_MODEL_NAME` | Yes, when enabling | Model name served by the selected inference provider |
 
 The referenced inference provider must also be present in `lightspeed-stack.yaml` (or `lightspeed-stack.local.yaml`) and configured via its env vars. See [docs/PROVIDERS.md](./PROVIDERS.md). Examples:
 
 ### Example: vLLM-backed validation
 
 ```env
-ENABLE_VALIDATION=true
+ENABLE_VALIDATION=question_validity
 VALIDATION_PROVIDER=vllm
 VALIDATION_MODEL_NAME=<your-model-name>
 VLLM_URL=<your-vllm-endpoint>
 VLLM_API_KEY=<api-key>
 ```
+
+> [!IMPORTANT]
+> Deployments that previously set `ENABLE_VALIDATION=true` (for the old Llama Stack safety provider) must switch to `ENABLE_VALIDATION=question_validity`, or LCORE will reject the shield `provider_id`.
 
 
 ## Syncing Configs
