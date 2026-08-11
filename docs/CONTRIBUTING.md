@@ -82,6 +82,22 @@ vector_stores:
 
 Paste that value into `byok_rag[].vector_db_id`. Keep `embedding_model` as the double-slash form `sentence-transformers//rag-content/embeddings_model` so Llama Stack’s registry id matches the load path. Point `db_path` at the FAISS db under `./rag-content` (mounted at `/rag-content` in the container).
 
+> [!NOTE]
+> Until OKP replaces the historic RAG setup, prebuilt FAISS DBs from `make get-rag` can return **0 chunks** with OGX. The index is stored under a bare Llama Stack key (`faiss_index:v3::vs_…`), while OGX reads the same SQLite file with persistence namespace `vector_io::faiss` and looks for `vector_io::faiss:faiss_index:v3::vs_…`.
+>
+> After `make get-rag`, copy the index under the namespaced key (adjust the docs version and `vs_…` id from `llama-stack.yaml`), then restart local services:
+>
+> ```sh
+> sqlite3 rag-content/vector_db/rhdh_product_docs/1.10/faiss_store.db <<'SQL'
+> INSERT OR REPLACE INTO kvstore (key, value, expiration)
+> SELECT 'vector_io::faiss:' || key, value, expiration
+> FROM kvstore
+> WHERE key = 'faiss_index:v3::vs_757285d9-b657-4bed-b18c-3359844e8c0d';
+> SQL
+> ```
+>
+> Re-run this after every `make get-rag` until OKP is added.
+
 `notebooks` is separate: it is dynamic create capacity under `vector_store` (local FAISS; GitOps rewrites it to pgvector). It is not a second `byok_rag` corpus.
 
 If you use a gitignored `lightspeed-stack.local.yaml` for local providers, copy the same `byok_rag` / `rag` / `vector_store` / `shields` sections from the committed file when they change.
