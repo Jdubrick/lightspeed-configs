@@ -29,7 +29,9 @@ TARGET_FILE = REPO_ROOT / "lightspeed-core-configs" / "lightspeed-stack.yaml"
 PROMPT_PLACEHOLDER_REPLACEMENTS = {
     "{SUBJECT_ALLOWED}": "${allowed}",
     "{SUBJECT_REJECTED}": "${rejected}",
-    "{{query}}": "${message}",
+    # Profile f-string uses ${{message}} so the runtime string is ${message};
+    # YAML gets the Template form directly.
+    "${{message}}": "${message}",
 }
 
 
