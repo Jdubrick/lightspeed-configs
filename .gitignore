@@ -12,6 +12,9 @@ values.env
 
 node_modules
 
+__pycache__/
+*.py[cod]
+
 # Generated GitOps manifests (created by scripts/generate-gitops-manifests.sh)
 generated/
 

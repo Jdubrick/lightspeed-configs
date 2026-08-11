@@ -47,7 +47,7 @@ Lightspeed Core uses mounted config/content in local compose:
 - `llama-stack-configs/config.yaml` -> `/app-root/config.yaml`
 - `rag-content/` -> `/rag-content`
 
-Question validation is not enabled automatically. If you want it, set `ENABLE_VALIDATION`, `VALIDATION_PROVIDER`, and `VALIDATION_MODEL_NAME` in `env/values.env`, along with any env vars required by the selected inference provider.
+Question validation is not enabled automatically. If you want it, set `ENABLE_VALIDATION=question_validity`, `VALIDATION_PROVIDER`, and `VALIDATION_MODEL_NAME` in `env/values.env`, along with any env vars required by the selected inference provider.
 
 See [Configuring Validation](#configuring-validation) for example configurations.
 
@@ -82,37 +82,54 @@ vector_stores:
 
 Paste that value into `byok_rag[].vector_db_id`. Keep `embedding_model` as the double-slash form `sentence-transformers//rag-content/embeddings_model` so Llama Stack’s registry id matches the load path. Point `db_path` at the FAISS db under `./rag-content` (mounted at `/rag-content` in the container).
 
+> [!NOTE]
+> Until OKP replaces the historic RAG setup, prebuilt FAISS DBs from `make get-rag` can return **0 chunks** with OGX. The index is stored under a bare Llama Stack key (`faiss_index:v3::vs_…`), while OGX reads the same SQLite file with persistence namespace `vector_io::faiss` and looks for `vector_io::faiss:faiss_index:v3::vs_…`.
+>
+> After `make get-rag`, copy the index under the namespaced key (adjust the docs version and `vs_…` id from `llama-stack.yaml`), then restart local services:
+>
+> ```sh
+> sqlite3 rag-content/vector_db/rhdh_product_docs/1.10/faiss_store.db <<'SQL'
+> INSERT OR REPLACE INTO kvstore (key, value, expiration)
+> SELECT 'vector_io::faiss:' || key, value, expiration
+> FROM kvstore
+> WHERE key = 'faiss_index:v3::vs_757285d9-b657-4bed-b18c-3359844e8c0d';
+> SQL
+> ```
+>
+> Re-run this after every `make get-rag` until OKP is added.
+
 `notebooks` is separate: it is dynamic create capacity under `vector_store` (local FAISS; GitOps rewrites it to pgvector). It is not a second `byok_rag` corpus.
 
-If you use a gitignored `lightspeed-stack.local.yaml` for local providers, copy the same `byok_rag` / `rag` / `vector_store` sections from the committed file when they change.
+If you use a gitignored `lightspeed-stack.local.yaml` for local providers, copy the same `byok_rag` / `rag` / `vector_store` / `shields` sections from the committed file when they change.
 
 ## Configuring Validation
 
-Question validation is controlled by the `ENABLE_VALIDATION` environment variable in `llama-stack-configs/config.yaml`. When set, it activates the `lightspeed_question_validity` shield. The shield uses `VALIDATION_PROVIDER` and `VALIDATION_MODEL_NAME` to select an enabled inference provider and model.
+Question validation is owned by Lightspeed Core (not Llama Stack / OGX Safety). It is configured under `shields` in [`lightspeed-stack.yaml`](../lightspeed-core-configs/lightspeed-stack.yaml) as a `question_validity` shield, including the RHDH classifier `model_prompt` and `invalid_question_response`.
+
+Opt-in uses OGX's `__disabled__` provider skip: when `ENABLE_VALIDATION` is unset, `provider_id` defaults to `__disabled__` and the shield entry is omitted (so `VALIDATION_*` need not be set). When enabling, set `ENABLE_VALIDATION` to the shield provider id `question_validity` — not `true` (that value is no longer valid after the LCORE migration).
 
 `make local-up` does not start a validation service or inject validation defaults. If you enable validation, you must provide both `VALIDATION_PROVIDER` and `VALIDATION_MODEL_NAME` yourself in `env/values.env`.
 
-If `ENABLE_VALIDATION` is empty, validation is disabled and no additional configuration is required.
-
-To enable validation, set the following in `env/values.env`:
-
 | Variable | Required | Description |
 | ---- | ---- | ---- |
-| `ENABLE_VALIDATION` | Yes, set to `true` | Activates the validation shield in `config.yaml` |
-| `VALIDATION_PROVIDER` | Yes | Inference provider used by the validation shield, for example `vllm` or `openai` |
-| `VALIDATION_MODEL_NAME` | Yes | Model name served by the selected inference provider |
+| `ENABLE_VALIDATION` | Yes, set to `question_validity` | Activates the LCORE `shields` entry (unset → disabled) |
+| `VALIDATION_PROVIDER` | Yes, when enabling | Inference provider id used in `model_id` (`provider/model`), for example `vllm` or `openai` |
+| `VALIDATION_MODEL_NAME` | Yes, when enabling | Model name served by the selected inference provider |
 
 The referenced inference provider must also be present in `lightspeed-stack.yaml` (or `lightspeed-stack.local.yaml`) and configured via its env vars. See [docs/PROVIDERS.md](./PROVIDERS.md). Examples:
 
 ### Example: vLLM-backed validation
 
 ```env
-ENABLE_VALIDATION=true
+ENABLE_VALIDATION=question_validity
 VALIDATION_PROVIDER=vllm
 VALIDATION_MODEL_NAME=<your-model-name>
 VLLM_URL=<your-vllm-endpoint>
 VLLM_API_KEY=<api-key>
 ```
+
+> [!IMPORTANT]
+> Deployments that previously set `ENABLE_VALIDATION=true` (for the old Llama Stack safety provider) must switch to `ENABLE_VALIDATION=question_validity`, or LCORE will reject the shield `provider_id`.
 
 
 ## Syncing Configs
@@ -135,7 +152,7 @@ This reads the `image` field for each service in `images.yaml` and updates the c
 
 ### Syncing Prompt Templates
 
-The question-validation `model_prompt` and `invalid_question_response` in `llama-stack-configs/config.yaml` are sourced from `lightspeed-core-configs/rhdh-profile.py`.
+The question-validation `model_prompt` and `invalid_question_response` in `lightspeed-core-configs/lightspeed-stack.yaml` (under `shields`) are sourced from `lightspeed-core-configs/rhdh-profile.py`.
 
 `make update-prompt-templates` and `make validate-prompt-templates` call `scripts/sync-prompt-templates.py` directly with `python3`. The helper requires Python 3.12+ and will exit with a clear error if invoked with an older interpreter.
 
@@ -168,8 +185,8 @@ make validate-yaml
 | `validate-images` | Validate that `images.yaml` and `env/default-values.env` are in sync. Requires `yq`. |
 | `validate-yaml` | Validate YAML formatting/syntax. |
 | `format-yaml` | Format YAML files. |
-| `validate-prompt-templates` | Validate that the question-validation prompt values in `llama-stack-configs/config.yaml` match `lightspeed-core-configs/rhdh-profile.py`. |
-| `update-prompt-templates` | Sync the question-validation prompt values in `llama-stack-configs/config.yaml` from `lightspeed-core-configs/rhdh-profile.py`. |
+| `validate-prompt-templates` | Validate that the question-validation prompt values in `lightspeed-core-configs/lightspeed-stack.yaml` match `lightspeed-core-configs/rhdh-profile.py`. |
+| `update-prompt-templates` | Sync the question-validation prompt values in `lightspeed-core-configs/lightspeed-stack.yaml` from `lightspeed-core-configs/rhdh-profile.py`. |
 
 ## Troubleshooting
 

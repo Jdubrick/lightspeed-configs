@@ -59,6 +59,6 @@ jobs:
         - name: Validate prompt template sync
           run: |
             if ! make validate-prompt-templates; then
-              echo "ERROR: Prompt templates are out of sync between lightspeed-core-configs/rhdh-profile.py and llama-stack-configs/config.yaml. Run 'make update-prompt-templates' and commit the result."
+              echo "ERROR: Prompt templates are out of sync between lightspeed-core-configs/rhdh-profile.py and lightspeed-core-configs/lightspeed-stack.yaml. Run 'make update-prompt-templates' and commit the result."
               exit 1
             fi
