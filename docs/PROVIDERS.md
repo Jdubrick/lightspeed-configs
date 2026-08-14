@@ -12,11 +12,15 @@ Each inference has its own environment variables. You can include all of these i
 > You will notice the `api_key_env` field is not wrapped in curly-braces `{}`. This is due to Lightspeed Core wrapping them internally to curate a proper `{env.xyz}` to pass through to Llama Stack so the keys are not exposed internally.
 
 > [!NOTE]
-> `vllm`, `openai`, and `vertexai` are only added for the GitOps/production deployment, injected by [scripts/generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) — they're intentionally absent from the git-tracked `lightspeed-stack.yaml`. To test any of these providers locally, add them to `lightspeed-core-configs/lightspeed-stack.local.yaml` instead (gitignored, auto-mounted by `make local-up` when present — see [CONTRIBUTING.md](./CONTRIBUTING.md)). If you need a provider added to the deployed environment too, update the script's injection logic accordingly.
+> Commented provider stubs for `vllm`, `openai`, and `vertexai` live in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml). For local development, copy that file to `lightspeed-core-configs/lightspeed-stack.local.yaml` (gitignored, auto-mounted by `make local-up` when present — see [CONTRIBUTING.md](./CONTRIBUTING.md)), uncomment the block(s) you need, and set the required env vars.
+>
+> For GitOps/production, [scripts/generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) uncomments those three providers, then adds production `allowed_models` for `openai` and `vertexai`.
+>
+> Ollama is not a tracked stub — add it manually to `.local.yaml` using the Ollama section below.
 
 ## vLLM
 
-To add the `vLLM` inference provider, include the following in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml):
+To add the `vLLM` inference provider, uncomment the corresponding block in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml) (via `lightspeed-core-configs/lightspeed-stack.local.yaml` for local development). The stub looks like:
 
 ```yaml
 inference:
@@ -39,7 +43,7 @@ In order for `vLLM` to configure properly, you must include environment variable
 > Lightspeed Core does not implement the "official" Ollama provider via Llama stack (remote::ollama), instead we can access it via the vLLM provider.
 >
 
-To add the `ollama` inference provider, include the following in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml):
+To add the `ollama` inference provider, paste the following into `lightspeed-core-configs/lightspeed-stack.local.yaml` (Ollama is not a tracked stub — add it manually):
 
 ```yaml
 inference:
@@ -58,7 +62,7 @@ inference:
 
 ## OpenAI
 
-To add the `openai` inference provider, include the following in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml):
+To add the `openai` inference provider, uncomment the corresponding block in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml) (via `lightspeed-core-configs/lightspeed-stack.local.yaml` for local development). The stub looks like:
 
 ```yaml
 inference:
@@ -74,7 +78,7 @@ Get your API key from [platform.openai.com](https://platform.openai.com/settings
 
 ## Vertex AI (Gemini)
 
-To add the `vertexai` inference provider, include the following in `lightspeed-stack.yaml` (for local testing, use `lightspeed-core-configs/lightspeed-stack.local.yaml`; for the GitOps/production deployment, add it to the injection logic in [generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) instead — see the note above):
+To add the `vertexai` inference provider, uncomment the corresponding block in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml) (via `lightspeed-core-configs/lightspeed-stack.local.yaml` for local development). The stub looks like:
 
 ```yaml
 inference:
@@ -100,11 +104,13 @@ The service account (or `gcloud auth application-default login` credentials) nee
 
 Provider details: [Llama Stack (OGX) Vertex AI docs](https://ogx-ai.github.io/docs/providers/inference/remote_vertexai).
 
+For GitOps/production, [generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) uncomments this stub and adds `allowed_models`. If the production shape changes, update the tracked stub and/or `add_inference_allowed_models` in that script.
+
 ## Restricting Models (`allowed_models`)
 
 Each of the providers above supports an `allowed_models` field to limit which models get registered with Llama Stack. This is most useful for `openai` and `vertexai`, since they auto-discover every model available to your account/project unless restricted.
 
-To use it, add `allowed_models` under the provider's `extra` block in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml).
+To use it locally, add `allowed_models` under the provider's `extra` block in `lightspeed-core-configs/lightspeed-stack.local.yaml`. For GitOps/production, [generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) overlays production `allowed_models` automatically for `openai` and `vertexai`.
 
 Open AI example:
 ```yaml
@@ -122,6 +128,8 @@ inference:
 If `allowed_models` is omitted, all models the provider can see are registered.
 
 ## Full Example
+
+The example below illustrates a local `lightspeed-stack.local.yaml` with providers uncommented. Ollama is optional and shown here for illustration only.
 
 ```yaml
 name: lightspeed-core-stack
