@@ -30,6 +30,10 @@ strip_license() {
   sed -n '/^[^#]/,$p' "$1"
 }
 
+strip_comments() {
+  sed -E '/^[[:space:]]*#/d'
+}
+
 get_image() {
   local key="$1"
   awk -v key="${key}" '
@@ -63,6 +67,138 @@ notebooks_vector_store_faiss_to_pgvector() {
   '
 }
 
+# Uncomment commented inference provider blocks whose id is vllm, openai, or vertexai.
+uncomment_inference_providers() {
+  awk '
+    function uncomment_line(text) {
+      comment_pos = index(text, "#")
+      if (comment_pos == 0) {
+        return text
+      }
+
+      prefix = substr(text, 1, comment_pos - 1)
+      rest = substr(text, comment_pos + 1)
+      sub(/^[[:space:]]/, "", rest)
+      return prefix rest
+    }
+
+    function flush_block(    i, line_out) {
+      if (!buffering) {
+        return
+      }
+
+      for (i = 1; i <= block_len; i++) {
+        line_out = block_lines[i]
+        if (block_id in enable) {
+          line_out = uncomment_line(line_out)
+        }
+        print line_out
+      }
+
+      delete block_lines
+      block_len = 0
+      block_id = ""
+      buffering = 0
+    }
+
+    BEGIN {
+      enable["vllm"] = 1
+      enable["openai"] = 1
+      enable["vertexai"] = 1
+    }
+
+    {
+      line = $0
+
+      if (in_inference && line ~ /^[^[:space:]]/ && line != "inference:") {
+        flush_block()
+        in_inference = 0
+        in_providers = 0
+      }
+
+      if (line == "inference:") {
+        flush_block()
+        in_inference = 1
+        print line
+        next
+      }
+
+      if (in_inference && line == "  providers:") {
+        flush_block()
+        in_providers = 1
+        print line
+        next
+      }
+
+      if (in_providers && line ~ /^  [^[:space:]#-]/) {
+        flush_block()
+        in_providers = 0
+      }
+
+      if (in_providers && line ~ /^[[:space:]]*#[[:space:]]*- type:/) {
+        flush_block()
+        buffering = 1
+        block_lines[++block_len] = line
+        next
+      }
+
+      if (buffering) {
+        if (line ~ /^[[:space:]]*#/) {
+          block_lines[++block_len] = line
+          if (line ~ /^[[:space:]]*#[[:space:]]*id:[[:space:]]*/) {
+            block_id = line
+            sub(/^[[:space:]]*#[[:space:]]*id:[[:space:]]*/, "", block_id)
+            sub(/[[:space:]].*$/, "", block_id)
+          }
+          next
+        }
+
+        flush_block()
+      }
+
+      print line
+    }
+
+    END {
+      flush_block()
+    }
+  '
+}
+
+add_inference_allowed_models() {
+  awk '
+    /^    - type:/ {
+      current_provider = ""
+    }
+
+    /^      id: / {
+      current_provider = $0
+      sub(/^      id: /, "", current_provider)
+    }
+
+    {
+      print
+    }
+
+    current_provider == "openai" && /^      api_key_env: OPENAI_API_KEY$/ {
+      print "      extra:"
+      print "        allowed_models:"
+      print "          - gpt-4o-mini"
+      print "          - gpt-5.1"
+      print "          - gpt-4.1-mini"
+      print "          - gpt-4.1-nano"
+    }
+
+    current_provider == "vertexai" && /^        location: \$\{env.VERTEX_AI_LOCATION:=global\}$/ {
+      print "        allowed_models:"
+      print "          - publishers/google/models/gemini-2.5-pro"
+      print "          - publishers/google/models/gemini-2.5-flash-lite"
+      print "          - publishers/google/models/gemini-3.1-pro-preview"
+      print "          - publishers/google/models/gemini-3.5-flash-lite"
+    }
+  '
+}
+
 echo "Generating llama-stack ConfigMap..."
 {
   cat << 'HEADER'
@@ -89,41 +225,10 @@ metadata:
 data:
   lightspeed-stack.yaml: |
 HEADER
-  strip_license "${REPO_ROOT}/lightspeed-core-configs/lightspeed-stack.yaml" \
+  uncomment_inference_providers < "${REPO_ROOT}/lightspeed-core-configs/lightspeed-stack.yaml" \
+    | strip_comments \
     | notebooks_vector_store_faiss_to_pgvector \
-    | awk '/^    - type: sentence_transformers$/ {
-        print "    - type: vllm"
-        print "      id: vllm"
-        print "      api_key_env: VLLM_API_KEY"
-        print "      extra:"
-        print "        base_url: ${env.VLLM_URL:=}"
-        print "        max_tokens: ${env.VLLM_MAX_TOKENS:=4096}"
-        print "        network:"
-        print "          tls:"
-        print "            verify: ${env.VLLM_TLS_VERIFY:=true}"
-        print "    - type: openai"
-        print "      id: openai"
-        print "      api_key_env: OPENAI_API_KEY"
-        print "      extra:"
-        print "        allowed_models:"
-        print "          - gpt-4o-mini"
-        print "          - gpt-5.1"
-        print "          - gpt-4.1-mini"
-        print "          - gpt-4.1-nano"
-        print "    - type: vertexai"
-        print "      id: vertexai"
-        print "      extra:"
-        print "        project: ${env.VERTEX_AI_PROJECT:=}"
-        print "        location: ${env.VERTEX_AI_LOCATION:=global}"
-        print "        allowed_models:"
-        print "          - publishers/google/models/gemini-2.5-pro"
-        print "          - publishers/google/models/gemini-2.5-flash-lite"
-        print "          - publishers/google/models/gemini-3.1-pro-preview"
-        print "          - publishers/google/models/gemini-3.5-flash-lite"
-        print
-        next
-      }
-      { print }' \
+    | add_inference_allowed_models \
     | indent
 } > "${OUTPUT_DIR}/lightspeed-stack-config.yaml"
 

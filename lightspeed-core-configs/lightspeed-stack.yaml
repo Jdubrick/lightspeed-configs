@@ -36,6 +36,23 @@ llama_stack:
 inference:
   providers:
     - type: sentence_transformers
+    # - type: vllm
+    #   id: vllm
+    #   api_key_env: VLLM_API_KEY
+    #   extra:
+    #     base_url: ${env.VLLM_URL:=}
+    #     max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
+    #     network:
+    #       tls:
+    #         verify: ${env.VLLM_TLS_VERIFY:=true}
+    # - type: openai
+    #   id: openai
+    #   api_key_env: OPENAI_API_KEY
+    # - type: vertexai
+    #   id: vertexai
+    #   extra:
+    #     project: ${env.VERTEX_AI_PROJECT:=}
+    #     location: ${env.VERTEX_AI_LOCATION:=global}
 byok_rag:
   - rag_id: rhdh-docs
     rag_type: inline::faiss
