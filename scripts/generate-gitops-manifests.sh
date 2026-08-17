@@ -67,134 +67,37 @@ notebooks_vector_store_faiss_to_pgvector() {
   '
 }
 
-# Uncomment commented inference provider blocks whose id is vllm, openai, or vertexai.
-uncomment_inference_providers() {
-  awk '
-    function uncomment_line(text) {
-      comment_pos = index(text, "#")
-      if (comment_pos == 0) {
-        return text
-      }
-
-      prefix = substr(text, 1, comment_pos - 1)
-      rest = substr(text, comment_pos + 1)
-      sub(/^[[:space:]]/, "", rest)
-      return prefix rest
-    }
-
-    function flush_block(    i, line_out) {
-      if (!buffering) {
-        return
-      }
-
-      for (i = 1; i <= block_len; i++) {
-        line_out = block_lines[i]
-        if (block_id in enable) {
-          line_out = uncomment_line(line_out)
-        }
-        print line_out
-      }
-
-      delete block_lines
-      block_len = 0
-      block_id = ""
-      buffering = 0
-    }
-
-    BEGIN {
-      enable["vllm"] = 1
-      enable["openai"] = 1
-      enable["vertexai"] = 1
-    }
-
-    {
-      line = $0
-
-      if (in_inference && line ~ /^[^[:space:]]/ && line != "inference:") {
-        flush_block()
-        in_inference = 0
-        in_providers = 0
-      }
-
-      if (line == "inference:") {
-        flush_block()
-        in_inference = 1
-        print line
-        next
-      }
-
-      if (in_inference && line == "  providers:") {
-        flush_block()
-        in_providers = 1
-        print line
-        next
-      }
-
-      if (in_providers && line ~ /^  [^[:space:]#-]/) {
-        flush_block()
-        in_providers = 0
-      }
-
-      if (in_providers && line ~ /^[[:space:]]*#[[:space:]]*- type:/) {
-        flush_block()
-        buffering = 1
-        block_lines[++block_len] = line
-        next
-      }
-
-      if (buffering) {
-        if (line ~ /^[[:space:]]*#/) {
-          block_lines[++block_len] = line
-          if (line ~ /^[[:space:]]*#[[:space:]]*id:[[:space:]]*/) {
-            block_id = line
-            sub(/^[[:space:]]*#[[:space:]]*id:[[:space:]]*/, "", block_id)
-            sub(/[[:space:]].*$/, "", block_id)
-          }
-          next
-        }
-
-        flush_block()
-      }
-
-      print line
-    }
-
-    END {
-      flush_block()
-    }
-  '
-}
-
+# Overlay production allowed_models onto native_override OpenAI/Vertex config blocks.
 add_inference_allowed_models() {
   awk '
-    /^    - type:/ {
-      current_provider = ""
+    /provider_id: \$\{env\.ENABLE_OPENAI:\+openai\}/ {
+      current_provider = "openai"
     }
-
-    /^      id: / {
-      current_provider = $0
-      sub(/^      id: /, "", current_provider)
+    /provider_id: \$\{env\.ENABLE_VERTEX_AI:\+vertexai\}/ {
+      current_provider = "vertexai"
+    }
+    /provider_id: / && $0 !~ /ENABLE_OPENAI/ && $0 !~ /ENABLE_VERTEX_AI/ {
+      current_provider = ""
     }
 
     {
       print
     }
 
-    current_provider == "openai" && /^      api_key_env: OPENAI_API_KEY$/ {
-      print "      extra:"
-      print "        allowed_models:"
-      print "          - gpt-4o-mini"
-      print "          - gpt-5.1"
-      print "          - gpt-4.1-mini"
-      print "          - gpt-4.1-nano"
+    current_provider == "openai" && /^              api_key: \$\{env\.OPENAI_API_KEY\}$/ {
+      print "              allowed_models:"
+      print "                - gpt-4o-mini"
+      print "                - gpt-5.1"
+      print "                - gpt-4.1-mini"
+      print "                - gpt-4.1-nano"
     }
 
-    current_provider == "vertexai" && /^        location: \$\{env.VERTEX_AI_LOCATION:=global\}$/ {
-      print "        allowed_models:"
-      print "          - publishers/google/models/gemini-2.5-pro"
-      print "          - publishers/google/models/gemini-2.5-flash-lite"
-      print "          - publishers/google/models/gemini-3.1-pro-preview"
-      print "          - publishers/google/models/gemini-3.5-flash-lite"
+    current_provider == "vertexai" && /^              location: \$\{env.VERTEX_AI_LOCATION:=global\}$/ {
+      print "              allowed_models:"
+      print "                - publishers/google/models/gemini-2.5-pro"
+      print "                - publishers/google/models/gemini-2.5-flash-lite"
+      print "                - publishers/google/models/gemini-3.1-pro-preview"
+      print "                - publishers/google/models/gemini-3.5-flash-lite"
     }
   '
 }
@@ -244,7 +147,7 @@ metadata:
 data:
   lightspeed-stack.yaml: |
 HEADER
-  uncomment_inference_providers < "${REPO_ROOT}/lightspeed-core-configs/lightspeed-stack.yaml" \
+  strip_license "${REPO_ROOT}/lightspeed-core-configs/lightspeed-stack.yaml" \
     | strip_comments \
     | notebooks_vector_store_faiss_to_pgvector \
     | add_inference_allowed_models \

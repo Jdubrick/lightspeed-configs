@@ -21,9 +21,9 @@
 
 1. Copy `./env/default-values.env` to `./env/values.env` and fill in any provider-specific values (see [docs/PROVIDERS.md](./PROVIDERS.md)).
 
-   To configure inference providers without editing the git-tracked `lightspeed-stack.yaml`, copy `lightspeed-core-configs/lightspeed-stack.yaml` to `lightspeed-core-configs/lightspeed-stack.local.yaml` and make your edits there. `make local-up` mounts the `.local.yaml` file automatically when it's present, otherwise it falls back to `lightspeed-stack.yaml`. `lightspeed-stack.local.yaml` is gitignored, so it's safe to leave provider config there permanently.
+   Inference providers are declared under `llama_stack.config.native_override.providers.inference` in [`lightspeed-stack.yaml`](../lightspeed-core-configs/lightspeed-stack.yaml). Enable them by setting `ENABLE_VLLM=true`, `ENABLE_OPENAI=true`, and/or `ENABLE_VERTEX_AI=true` in `env/values.env`. Leave a flag empty to skip that provider (OGX `${env.ENABLE_*:+id}`). Also set the provider's API key/URL vars. For GitOps/production, [scripts/generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) adds production `allowed_models` for `openai` and `vertexai`. Ollama (if needed) is added manually in `.local.yaml` — see [docs/PROVIDERS.md](./PROVIDERS.md).
 
-   The tracked `lightspeed-stack.yaml` contains commented stubs for `vllm`, `openai`, and `vertexai`. Copy it to `lightspeed-stack.local.yaml` and uncomment the provider block(s) you need. For GitOps/production, [scripts/generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) uncomments those three providers and adds production `allowed_models`. Ollama (if needed) is added manually in `.local.yaml` — see [docs/PROVIDERS.md](./PROVIDERS.md).
+   To overlay other stack YAML without editing the git-tracked file, copy `lightspeed-core-configs/lightspeed-stack.yaml` to `lightspeed-core-configs/lightspeed-stack.local.yaml`. `make local-up` mounts the `.local.yaml` file automatically when it's present, otherwise it falls back to `lightspeed-stack.yaml`. `lightspeed-stack.local.yaml` is gitignored.
 
 2. Pull the RAG content:
 
@@ -51,7 +51,6 @@ Lightspeed Core uses mounted config/content in local compose:
 
 - `lightspeed-core-configs/lightspeed-stack.yaml` (or `lightspeed-stack.local.yaml`, if present) -> `/app-root/lightspeed-stack.yaml`
 - `lightspeed-core-configs/rhdh-profile.py` -> `/app-root/rhdh-profile.py`
-- `llama-stack-configs/config.yaml` -> `/app-root/config.yaml`
 - `rag-content/` -> `/rag-content`
 
 Question validation is not enabled automatically. If you want it, set `ENABLE_VALIDATION=question_validity`, `VALIDATION_PROVIDER`, and `VALIDATION_MODEL_NAME` in `env/values.env`, along with any env vars required by the selected inference provider.
@@ -107,7 +106,7 @@ Paste that value into `byok_rag[].vector_db_id`. Keep `embedding_model` as the d
 
 `notebooks` is separate: it is dynamic create capacity under `vector_store` (local FAISS; GitOps rewrites it to pgvector). It is not a second `byok_rag` corpus.
 
-If you use a gitignored `lightspeed-stack.local.yaml` for local providers, copy the same `byok_rag` / `rag` / `vector_store` / `shields` sections from the committed file when they change.
+If you use a gitignored `lightspeed-stack.local.yaml`, copy the same `byok_rag` / `rag` / `vector_store` / `shields` sections from the committed file when they change.
 
 ## Configuring Skills
 
@@ -139,12 +138,13 @@ Opt-in uses OGX's `__disabled__` provider skip: when `ENABLE_VALIDATION` is unse
 | `VALIDATION_PROVIDER` | Yes, when enabling | Inference provider id used in `model_id` (`provider/model`), for example `vllm` or `openai` |
 | `VALIDATION_MODEL_NAME` | Yes, when enabling | Model name served by the selected inference provider |
 
-The referenced inference provider must also be present in `lightspeed-stack.yaml` (or `lightspeed-stack.local.yaml`) and configured via its env vars. See [docs/PROVIDERS.md](./PROVIDERS.md). Examples:
+The referenced inference provider must also be enabled (`ENABLE_VLLM=true`, `ENABLE_OPENAI=true`, or `ENABLE_VERTEX_AI=true`) and configured via its env vars. See [docs/PROVIDERS.md](./PROVIDERS.md). Examples:
 
 ### Example: vLLM-backed validation
 
 ```env
 ENABLE_VALIDATION=question_validity
+ENABLE_VLLM=true
 VALIDATION_PROVIDER=vllm
 VALIDATION_MODEL_NAME=<your-model-name>
 VLLM_URL=<your-vllm-endpoint>
