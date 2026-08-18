@@ -105,17 +105,22 @@ add_inference_allowed_models() {
 inject_byok_rag() {
   awk '
     /^rag:$/ {
-      print "byok_rag:"
-      print "  - rag_id: custom-org-docs"
-      print "    rag_type: inline::faiss"
-      print "    embedding_model: nomic-ai/nomic-embed-text-v1.5"
-      print "    embedding_dimension: 768"
-      print "    vector_db_id: vs_727b6321-1ff4-47bf-a76b-1cc12426c954"
-      print "    db_path: /tmp/vector_db/custom_docs/faiss_store.db"
-      print "    score_multiplier: 1.0"
+      print
+      print "  byok:"
+      print "    stores:"
+      print "      - rag_id: custom-org-docs"
+      print "        backend: faiss"
+      print "        embedding_model: nomic-ai/nomic-embed-text-v1.5"
+      print "        embedding_dimension: 768"
+      print "        vector_db_id: vs_727b6321-1ff4-47bf-a76b-1cc12426c954"
+      print "        db_path: /tmp/vector_db/custom_docs/faiss_store.db"
+      print "        score_multiplier: 1.0"
+      next
     }
-    /^    - okp$/ {
-      print "    - custom-org-docs"
+    /^        - okp$/ {
+      print "        - okp"
+      print "        - custom-org-docs"
+      next
     }
     { print }
   '
