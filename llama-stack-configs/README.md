@@ -1,5 +1,9 @@
 # Llama Stack Configuration Files
 
+> [!IMPORTANT]
+> This directory is set to be deleted/archived in favour of a lightspeed-stack.yaml only implementation
+>
+
 This directory stores the Llama Stack config for the single active release tracked on `main`.
 
 - `config.yaml` is the unified config. The question-validation shield is conditionally enabled via `ENABLE_VALIDATION` and uses the `VALIDATION_PROVIDER` and `VALIDATION_MODEL_NAME` env vars you supply (see [CONTRIBUTING.md](../docs/CONTRIBUTING.md#configuring-validation)).
