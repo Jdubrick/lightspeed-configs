@@ -40,11 +40,11 @@ llama_stack:
           - provider_id: ${env.ENABLE_OPENAI:+openai}
             provider_type: remote::openai
             config:
-              api_key: ${env.OPENAI_API_KEY}
+              api_key: ${env.OPENAI_API_KEY:=}
           - provider_id: ${env.ENABLE_VLLM:+vllm}
             provider_type: remote::vllm
             config:
-              api_token: ${env.VLLM_API_KEY}
+              api_token: ${env.VLLM_API_KEY:=}
               base_url: ${env.VLLM_URL:=}
               max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
               network:
