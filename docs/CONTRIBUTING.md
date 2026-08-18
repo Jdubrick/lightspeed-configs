@@ -45,7 +45,15 @@ make get-skills
 make local-up
 ```
 
-This starts Lightspeed Core using the mounted config/content below.
+This starts Lightspeed Core using the mounted config/content below. To also start the Offline Knowledge Portal (OKP) and wait until it is healthy before Lightspeed Core starts:
+
+```sh
+make local-up-okp
+```
+
+Set `OKP_ACCESS_KEY` in `env/values.env` when using `make local-up-okp`. `make local-down` stops OKP even if you started it with the overlay.
+
+To obtain `OKP_ACCESS_KEY` navigate to the [access key generator](https://access.redhat.com/offline/access/).
 
 Lightspeed Core uses mounted config/content in local compose:
 
@@ -57,7 +65,7 @@ Question validation is not enabled automatically. If you want it, set `ENABLE_VA
 
 See [Configuring Validation](#configuring-validation) for example configurations.
 
-4. Stop services:
+1. Stop services:
 
 ```sh
 make local-down
@@ -204,7 +212,8 @@ make validate-yaml
 | `get-rag` | Pull and unpack RAG content into `./rag-content` (replaces existing contents). Optional: `RAG_CONTENT_IMAGE=<image>`. |
 | `get-skills` | Optional. Fetch RHDH skills into `./skills` for skills consumption (replaces existing contents). Optional: `RHDH_SKILLS_REPO=<url>`, `RHDH_SKILLS_REF=<ref>`. |
 | `local-up` | Start local compose services. Validation is controlled entirely through env vars in `env/values.env`. |
-| `local-down` | Stop local compose services. |
+| `local-up-okp` | Start local compose services with OKP (`compose/compose-okp.yaml`). Set `OKP_ACCESS_KEY` in `env/values.env`. |
+| `local-down` | Stop local compose services, including OKP if it was started. |
 | `sync-images` | Sync image values from `images.yaml` into `env/default-values.env`. Requires `yq`. |
 | `validate-images` | Validate that `images.yaml` and `env/default-values.env` are in sync. Requires `yq`. |
 | `validate-yaml` | Validate YAML formatting/syntax. |
