@@ -33,8 +33,9 @@ llama_stack:
             When appropriate, cite sources at the end of sentences using doc_url and doc_title format.
             Citing sources is not always required because citations are handled externally.
             Never include any citation that is in the form '<| file-id |>'.
-# inference:
-#   providers:
+inference:
+  providers:
+    - type: sentence_transformers
     # - type: vllm
     #   id: vllm
     #   api_key_env: VLLM_API_KEY
