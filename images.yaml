@@ -15,7 +15,7 @@
 # limitations under the License.
 lightspeed-core:
   llama_version: 0.6.0
-  image: quay.io/lightspeed-core/lightspeed-stack:dev-20260818-89fab69
+  image: quay.io/lightspeed-core/lightspeed-stack:dev-20260824-cbd182b
   latest_release: v0.6.0rc2 # using v prefix in catalog now it seems
 rag-content:
   llama_version: 0.5.0
