@@ -24,7 +24,7 @@ service:
 llama_stack:
   use_as_library_client: true
   config:
-    baseline: default
+    baseline: byo-llm
     native_override:
       vector_stores:
         annotation_prompt_params:
@@ -33,28 +33,25 @@ llama_stack:
             When appropriate, cite sources at the end of sentences using doc_url and doc_title format.
             Citing sources is not always required because citations are handled externally.
             Never include any citation that is in the form '<| file-id |>'.
-      providers: #NOTE: This section will move back to the top-level when the "default" openai is removed from the default baseline. Without that change it forces openai on all startups.
-        inference:
-          - provider_id: sentence-transformers
-            provider_type: inline::sentence-transformers
-          - provider_id: ${env.ENABLE_OPENAI:+openai}
-            provider_type: remote::openai
-            config:
-              api_key: ${env.OPENAI_API_KEY:=}
-          - provider_id: ${env.ENABLE_VLLM:+vllm}
-            provider_type: remote::vllm
-            config:
-              api_token: ${env.VLLM_API_KEY:=}
-              base_url: ${env.VLLM_URL:=}
-              max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
-              network:
-                tls:
-                  verify: ${env.VLLM_TLS_VERIFY:=true}
-          - provider_id: ${env.ENABLE_VERTEX_AI:+vertexai}
-            provider_type: remote::vertexai
-            config:
-              project: ${env.VERTEX_AI_PROJECT:=}
-              location: ${env.VERTEX_AI_LOCATION:=global}
+# inference:
+#   providers:
+    # - type: vllm
+    #   id: vllm
+    #   api_key_env: VLLM_API_KEY
+    #   extra:
+    #     base_url: ${env.VLLM_URL:=}
+    #     max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
+    #     network:
+    #       tls:
+    #         verify: ${env.VLLM_TLS_VERIFY:=true}
+    # - type: openai
+    #   id: openai
+    #   api_key_env: OPENAI_API_KEY
+    # - type: vertexai
+    #   id: vertexai
+    #   extra:
+    #     project: ${env.VERTEX_AI_PROJECT:=}
+    #     location: ${env.VERTEX_AI_LOCATION:=global}
 vector_store:
   default_provider: notebooks
   providers:
