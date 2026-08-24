@@ -21,7 +21,6 @@ services:
     volumes:
       - ../${LIGHTSPEED_STACK_CONFIG:-lightspeed-core-configs/lightspeed-stack.yaml}:/app-root/lightspeed-stack.yaml:Z
       - ../lightspeed-core-configs/rhdh-profile.py:/app-root/rhdh-profile.py:Z
-      - ../rag-content:/rag-content:Z
       - ../skills:/app-root/skills:Z,ro
       # Only used when the vertexai provider is configured. Falls back to a
       # harmless empty placeholder so the mount doesn't fail otherwise.
