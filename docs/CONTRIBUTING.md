@@ -21,9 +21,9 @@
 
 1. Copy `./env/default-values.env` to `./env/values.env` and fill in any provider-specific values (see [docs/PROVIDERS.md](./PROVIDERS.md)).
 
-   Inference providers are declared under `llama_stack.config.native_override.providers.inference` in [`lightspeed-stack.yaml`](../lightspeed-core-configs/lightspeed-stack.yaml). Enable them by setting `ENABLE_VLLM=true`, `ENABLE_OPENAI=true`, and/or `ENABLE_VERTEX_AI=true` in `env/values.env`. Leave a flag empty to skip that provider (OGX `${env.ENABLE_*:+id}`). Also set the provider's API key/URL vars. For GitOps/production, [scripts/generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) adds production `allowed_models` for `openai` and `vertexai`. Ollama (if needed) is added manually in `.local.yaml` — see [docs/PROVIDERS.md](./PROVIDERS.md).
+   To configure inference providers without editing the git-tracked `lightspeed-stack.yaml`, copy `lightspeed-core-configs/lightspeed-stack.yaml` to `lightspeed-core-configs/lightspeed-stack.local.yaml` and make your edits there. `make local-up` mounts the `.local.yaml` file automatically when it's present, otherwise it falls back to `lightspeed-stack.yaml`. `lightspeed-stack.local.yaml` is gitignored, so it's safe to leave provider config there permanently.
 
-   To overlay other stack YAML without editing the git-tracked file, copy `lightspeed-core-configs/lightspeed-stack.yaml` to `lightspeed-core-configs/lightspeed-stack.local.yaml`. `make local-up` mounts the `.local.yaml` file automatically when it's present, otherwise it falls back to `lightspeed-stack.yaml`. `lightspeed-stack.local.yaml` is gitignored.
+   The tracked `lightspeed-stack.yaml` uses the `byo-llm` baseline and contains commented stubs for `vllm`, `openai`, and `vertexai` under `inference.providers`. Copy it to `lightspeed-stack.local.yaml` and uncomment the provider block(s) you need. Providers do not belong under `llama_stack.config.native_override`. For GitOps/production, [scripts/generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) uncomments those three providers and adds production `allowed_models`. Ollama (if needed) is added manually in `.local.yaml` — see [docs/PROVIDERS.md](./PROVIDERS.md).
 
 2. Pull the RAG content:
 
@@ -146,13 +146,12 @@ Opt-in uses OGX's `__disabled__` provider skip: when `ENABLE_VALIDATION` is unse
 | `VALIDATION_PROVIDER` | Yes, when enabling | Inference provider id used in `model_id` (`provider/model`), for example `vllm` or `openai` |
 | `VALIDATION_MODEL_NAME` | Yes, when enabling | Model name served by the selected inference provider |
 
-The referenced inference provider must also be enabled (`ENABLE_VLLM=true`, `ENABLE_OPENAI=true`, or `ENABLE_VERTEX_AI=true`) and configured via its env vars. See [docs/PROVIDERS.md](./PROVIDERS.md). Examples:
+The referenced inference provider must also be present in `lightspeed-stack.yaml` (or `lightspeed-stack.local.yaml`) and configured via its env vars. See [docs/PROVIDERS.md](./PROVIDERS.md). Examples:
 
 ### Example: vLLM-backed validation
 
 ```env
 ENABLE_VALIDATION=question_validity
-ENABLE_VLLM=true
 VALIDATION_PROVIDER=vllm
 VALIDATION_MODEL_NAME=<your-model-name>
 VLLM_URL=<your-vllm-endpoint>
