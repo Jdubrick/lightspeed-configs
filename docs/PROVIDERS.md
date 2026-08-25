@@ -12,7 +12,7 @@ Each inference has its own environment variables. You can include all of these i
 > You will notice the `api_key_env` field is not wrapped in curly-braces `{}`. This is due to Lightspeed Core wrapping them internally to curate a proper `{env.xyz}` to pass through to Llama Stack so the keys are not exposed internally.
 
 > [!NOTE]
-> Commented provider stubs for `vllm`, `openai`, and `vertexai` live in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml). For local development, copy that file to `lightspeed-core-configs/lightspeed-stack.local.yaml` (gitignored, auto-mounted by `make local-up` when present — see [CONTRIBUTING.md](./CONTRIBUTING.md)), uncomment the block(s) you need, and set the required env vars.
+> Commented provider stubs for `vllm`, `openai`, and `vertexai` live under `inference.providers` in [lightspeed-stack.yaml](../lightspeed-core-configs/lightspeed-stack.yaml). The `byo-llm` baseline means these stay at that top-level section — do not add them to `llama_stack.config.native_override`. For local development, copy that file to `lightspeed-core-configs/lightspeed-stack.local.yaml` (gitignored, auto-mounted by `make local-up` when present — see [CONTRIBUTING.md](./CONTRIBUTING.md)), uncomment the block(s) you need, and set the required env vars.
 >
 > For GitOps/production, [scripts/generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) uncomments those three providers, then adds production `allowed_models` for `openai` and `vertexai`.
 >
@@ -143,10 +143,9 @@ service:
 llama_stack:
   use_as_library_client: true
   config:
-    profile: /app-root/config.yaml
+    baseline: byo-llm
 inference:
   providers:
-    - type: sentence_transformers
     - type: openai
       id: openai
       api_key_env: OPENAI_API_KEY

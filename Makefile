@@ -23,6 +23,7 @@ ENV_FILES += --env-file env/values.env
 endif
 
 LOCAL_COMPOSE_FILES := -f compose/compose.yaml
+OKP_COMPOSE_FILES := -f compose/compose.yaml -f compose/compose-okp.yaml
 
 LIGHTSPEED_STACK_CONFIG := lightspeed-core-configs/lightspeed-stack.yaml
 ifneq ($(wildcard lightspeed-core-configs/lightspeed-stack.local.yaml),)
@@ -48,12 +49,16 @@ get-skills: ## Fetch RHDH skills from GitHub into the skills/ directory
 	bash scripts/fetch-skills.sh
 
 .PHONY: local-up
-local-up:
+local-up: ## Start local compose services
 	$(COMPOSE) $(ENV_FILES) $(LOCAL_COMPOSE_FILES) up -d
 
+.PHONY: local-up-okp
+local-up-okp: ## Start local compose services with OKP
+	$(COMPOSE) $(ENV_FILES) $(OKP_COMPOSE_FILES) up -d
+
 .PHONY: local-down
-local-down:
-	$(COMPOSE) $(ENV_FILES) $(LOCAL_COMPOSE_FILES) down
+local-down: ## Stop local compose services (including OKP if it was started)
+	$(COMPOSE) $(ENV_FILES) $(OKP_COMPOSE_FILES) down --remove-orphans
 
 .PHONY: help
 help: ## Show this help screen

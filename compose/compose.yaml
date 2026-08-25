@@ -21,14 +21,15 @@ services:
     volumes:
       - ../${LIGHTSPEED_STACK_CONFIG:-lightspeed-core-configs/lightspeed-stack.yaml}:/app-root/lightspeed-stack.yaml:Z
       - ../lightspeed-core-configs/rhdh-profile.py:/app-root/rhdh-profile.py:Z
-      - ../llama-stack-configs/config.yaml:/app-root/config.yaml:Z
-      - ../rag-content:/rag-content:Z
       - ../skills:/app-root/skills:Z,ro
       # Only used when the vertexai provider is configured. Falls back to a
       # harmless empty placeholder so the mount doesn't fail otherwise.
       - ${GOOGLE_APPLICATION_CREDENTIALS_HOST_PATH:-../env/gcp-credentials-placeholder.json}:/app-root/gcp-credentials.json:Z,ro
     environment:
       - SERVICE_HOST=0.0.0.0
+      - KV_STORE_PATH=${KV_STORE_PATH:-/tmp/kvstore.db}
+      - SQL_STORE_PATH=${SQL_STORE_PATH:-/tmp/sql_store.db}
+      - SQLITE_STORE_DIR=${SQLITE_STORE_DIR:-/tmp/llama-stack-files}
     env_file:
       - ../env/values.env
     healthcheck:

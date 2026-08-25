@@ -1,0 +1,49 @@
+#
+#
+# Copyright Red Hat
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Overlay: merged only when `make local-up-okp`.
+# Starts OKP first, then Lightspeed Core.
+services:
+  okp:
+    image: ${OKP_IMAGE:-registry.redhat.io/offline-knowledge-portal/rhokp-rhel9:latest}
+    ports:
+      # Host 8081 so localhost does not clash with LCORE's host 8080.
+      # OKP still listens on 8080 inside its container.
+      - "8081:8080"
+      - "8443:8443"
+    environment:
+      - ACCESS_KEY=${OKP_ACCESS_KEY:-}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://127.0.0.1:8080/",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+  lightspeed-core:
+    depends_on:
+      okp:
+        condition: service_healthy
+    extra_hosts:
+      # rhokp_url is also the clickable source link, so it must be a
+      # host-reachable address. This makes `localhost` inside LCORE mean
+      # the host (healthchecks still use 127.0.0.1 and are unaffected).
+      - "localhost:host-gateway"
+    environment:
+      - OKP_SERVICE_URL=http://localhost:8081

@@ -23,7 +23,7 @@
 
    To configure inference providers without editing the git-tracked `lightspeed-stack.yaml`, copy `lightspeed-core-configs/lightspeed-stack.yaml` to `lightspeed-core-configs/lightspeed-stack.local.yaml` and make your edits there. `make local-up` mounts the `.local.yaml` file automatically when it's present, otherwise it falls back to `lightspeed-stack.yaml`. `lightspeed-stack.local.yaml` is gitignored, so it's safe to leave provider config there permanently.
 
-   The tracked `lightspeed-stack.yaml` contains commented stubs for `vllm`, `openai`, and `vertexai`. Copy it to `lightspeed-stack.local.yaml` and uncomment the provider block(s) you need. For GitOps/production, [scripts/generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) uncomments those three providers and adds production `allowed_models`. Ollama (if needed) is added manually in `.local.yaml` — see [docs/PROVIDERS.md](./PROVIDERS.md).
+   The tracked `lightspeed-stack.yaml` uses the `byo-llm` baseline and contains commented stubs for `vllm`, `openai`, and `vertexai` under `inference.providers`. Copy it to `lightspeed-stack.local.yaml` and uncomment the provider block(s) you need. Providers do not belong under `llama_stack.config.native_override`. For GitOps/production, [scripts/generate-gitops-manifests.sh](../scripts/generate-gitops-manifests.sh) uncomments those three providers and adds production `allowed_models`. Ollama (if needed) is added manually in `.local.yaml` — see [docs/PROVIDERS.md](./PROVIDERS.md).
 
 2. Pull the RAG content:
 
@@ -39,26 +39,33 @@ make get-skills
 
 4. The production config (`lightspeed-stack.yaml`) sets `host: 127.0.0.1` so the service only binds to loopback — reachable exclusively by containers in the same Pod on Kubernetes. The compose file overrides this with `SERVICE_HOST=0.0.0.0` so the container port mapping works and you can reach the API at `localhost:8080` from your host.
 
-1. Start the local API stack:
+5. Start the local API stack:
 
 ```sh
 make local-up
 ```
 
-This starts Lightspeed Core using the mounted config/content below.
+This starts Lightspeed Core using the mounted config/content below. To also start the Offline Knowledge Portal (OKP) and wait until it is healthy before Lightspeed Core starts:
+
+```sh
+make local-up-okp
+```
+
+Set `OKP_ACCESS_KEY` in `env/values.env` when using `make local-up-okp`. `make local-down` stops OKP even if you started it with the overlay.
+
+To obtain `OKP_ACCESS_KEY` navigate to the [access key generator](https://access.redhat.com/offline/access/).
 
 Lightspeed Core uses mounted config/content in local compose:
 
 - `lightspeed-core-configs/lightspeed-stack.yaml` (or `lightspeed-stack.local.yaml`, if present) -> `/app-root/lightspeed-stack.yaml`
 - `lightspeed-core-configs/rhdh-profile.py` -> `/app-root/rhdh-profile.py`
-- `llama-stack-configs/config.yaml` -> `/app-root/config.yaml`
 - `rag-content/` -> `/rag-content`
 
 Question validation is not enabled automatically. If you want it, set `ENABLE_VALIDATION=question_validity`, `VALIDATION_PROVIDER`, and `VALIDATION_MODEL_NAME` in `env/values.env`, along with any env vars required by the selected inference provider.
 
 See [Configuring Validation](#configuring-validation) for example configurations.
 
-4. Stop services:
+6. Stop services:
 
 ```sh
 make local-down
@@ -107,7 +114,7 @@ Paste that value into `byok_rag[].vector_db_id`. Keep `embedding_model` as the d
 
 `notebooks` is separate: it is dynamic create capacity under `vector_store` (local FAISS; GitOps rewrites it to pgvector). It is not a second `byok_rag` corpus.
 
-If you use a gitignored `lightspeed-stack.local.yaml` for local providers, copy the same `byok_rag` / `rag` / `vector_store` / `shields` sections from the committed file when they change.
+If you use a gitignored `lightspeed-stack.local.yaml`, copy the same `byok_rag` / `rag` / `vector_store` / `shields` sections from the committed file when they change.
 
 ## Configuring Skills
 
@@ -204,7 +211,8 @@ make validate-yaml
 | `get-rag` | Pull and unpack RAG content into `./rag-content` (replaces existing contents). Optional: `RAG_CONTENT_IMAGE=<image>`. |
 | `get-skills` | Optional. Fetch RHDH skills into `./skills` for skills consumption (replaces existing contents). Optional: `RHDH_SKILLS_REPO=<url>`, `RHDH_SKILLS_REF=<ref>`. |
 | `local-up` | Start local compose services. Validation is controlled entirely through env vars in `env/values.env`. |
-| `local-down` | Stop local compose services. |
+| `local-up-okp` | Start local compose services with OKP (`compose/compose-okp.yaml`). Set `OKP_ACCESS_KEY` in `env/values.env`. |
+| `local-down` | Stop local compose services, including OKP if it was started. |
 | `sync-images` | Sync image values from `images.yaml` into `env/default-values.env`. Requires `yq`. |
 | `validate-images` | Validate that `images.yaml` and `env/default-values.env` are in sync. Requires `yq`. |
 | `validate-yaml` | Validate YAML formatting/syntax. |

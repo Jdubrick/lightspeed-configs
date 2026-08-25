@@ -24,7 +24,7 @@ service:
 llama_stack:
   use_as_library_client: true
   config:
-    profile: /app-root/config.yaml
+    baseline: byo-llm
     native_override:
       vector_stores:
         annotation_prompt_params:
@@ -147,9 +147,11 @@ mcp_servers:
     authorization_headers:
       Authorization: 'client'
 rag:
-  tool:
-    - okp
-okp:
-  rhokp_url: '${env.OKP_SERVICE_URL:=http://localhost:8080}'
-  offline: true
-  chunk_filter_query: 'product:*developer_hub*'
+  okp:
+    rhokp_url: '${env.OKP_SERVICE_URL:=http://localhost:8080}'
+    offline: true
+    chunk_filter_query: 'product:*developer_hub*'
+  retrieval:
+    tool:
+      sources:
+        - okp
