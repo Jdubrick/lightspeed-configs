@@ -224,21 +224,6 @@ inject_byok_rag() {
   '
 }
 
-echo "Generating llama-stack ConfigMap..."
-{
-  cat << 'HEADER'
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: llama-stack-config
-  namespace: {{ .Release.Namespace }}
-data:
-  config.yaml: |
-HEADER
-  strip_license "${REPO_ROOT}/llama-stack-configs/config.yaml" \
-    | indent
-} > "${OUTPUT_DIR}/llama-stack-config.yaml"
-
 echo "Generating lightspeed-stack ConfigMap..."
 {
   cat << 'HEADER'
