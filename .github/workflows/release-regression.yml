@@ -85,7 +85,7 @@ jobs:
         ${{ needs.detect-lightspeed-image-change.outputs.lcore_image }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       VLLM_API_KEY: ${{ secrets.VLLM_API_KEY }}
-      VLLM_URL: ${{ vars.VLLM_URL }}
+      VLLM_URL: ${{ secrets.VLLM_URL }}
     steps:
       - name: Check out pull request
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
