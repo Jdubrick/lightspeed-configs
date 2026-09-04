@@ -98,6 +98,16 @@ jobs:
           sudo wget -qO /usr/local/bin/yq "${yq_url}"
           sudo chmod +x /usr/local/bin/yq
 
+      - name: Log in to Quay
+        env:
+          QUAY_REGISTRY_USERNAME: ${{ secrets.QUAY_REGISTRY_USERNAME }}
+          QUAY_REGISTRY_PASSWORD: ${{ secrets.QUAY_REGISTRY_PASSWORD }}
+        run: |
+          printf '%s' "${QUAY_REGISTRY_PASSWORD}" |
+            docker login quay.io \
+              --username "${QUAY_REGISTRY_USERNAME}" \
+              --password-stdin
+
       - name: Create regression environment
         run: bash .ci/prepare-regression.sh
 
