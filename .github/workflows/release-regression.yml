@@ -85,7 +85,7 @@ jobs:
         ${{ needs.detect-lightspeed-image-change.outputs.lcore_image }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       VLLM_API_KEY: ${{ secrets.VLLM_API_KEY }}
-      VLLM_URL: ${{ vars.VLLM_URL }}
+      VLLM_URL: ${{ secrets.VLLM_URL }}
     steps:
       - name: Check out pull request
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -97,6 +97,16 @@ jobs:
           yq_url=https://github.com/mikefarah/yq/releases/download/v4.52.4/yq_linux_amd64
           sudo wget -qO /usr/local/bin/yq "${yq_url}"
           sudo chmod +x /usr/local/bin/yq
+
+      - name: Log in to Quay
+        env:
+          QUAY_REGISTRY_USERNAME: ${{ secrets.QUAY_REGISTRY_USERNAME }}
+          QUAY_REGISTRY_PASSWORD: ${{ secrets.QUAY_REGISTRY_PASSWORD }}
+        run: |
+          printf '%s' "${QUAY_REGISTRY_PASSWORD}" |
+            docker login quay.io \
+              --username "${QUAY_REGISTRY_USERNAME}" \
+              --password-stdin
 
       - name: Create regression environment
         run: bash .ci/prepare-regression.sh
