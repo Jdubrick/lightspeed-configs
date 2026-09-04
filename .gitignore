@@ -15,3 +15,6 @@ node_modules
 generated/
 
 .qodo
+
+.ci/artifacts/
+.ci/work/

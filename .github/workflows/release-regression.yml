@@ -1,0 +1,157 @@
+#
+#
+# Copyright Red Hat
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Release Regression Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - release-1.10
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-regression-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  detect-lightspeed-image-change:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.detect.outputs.changed }}
+      lightspeed_core_image: ${{ steps.detect.outputs.lcore_image }}
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d9 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Install yq
+        run: |
+          yq_url=https://github.com/mikefarah/yq/releases/download/v4.52.4/yq_linux_amd64
+          sudo wget -qO /usr/local/bin/yq "${yq_url}"
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Compare Lightspeed image references
+        id: detect
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --no-tags origin "${BASE_SHA}" "${HEAD_SHA}"
+          lightspeed_core_image="$(
+            git show "${HEAD_SHA}:images.yaml" |
+              yq -r '."lightspeed-core".image'
+          )"
+          if [[ -z "${lightspeed_core_image}" ||
+            "${lightspeed_core_image}" == "null" ]]; then
+            echo 'Unable to resolve the Core image from images.yaml.' >&2
+            exit 1
+          fi
+          if .ci/check-lightspeed-image-change.sh \
+            "${BASE_SHA}" \
+            "${HEAD_SHA}"; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+            printf 'lcore_image=%s\n' \
+              "${lightspeed_core_image}" >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  regression:
+    needs: detect-lightspeed-image-change
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      needs.detect-lightspeed-image-change.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      LIGHTSPEED_CORE_IMAGE: >-
+        ${{ needs.detect-lightspeed-image-change.outputs.lcore_image }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      VLLM_API_KEY: ${{ secrets.VLLM_API_KEY }}
+      VLLM_URL: ${{ vars.VLLM_URL }}
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@34e114876b0b11c390a56381ad16f8d9 # v4.3.1
+        with:
+          fetch-depth: 1
+
+      - name: Install yq
+        run: |
+          yq_url=https://github.com/mikefarah/yq/releases/download/v4.52.4/yq_linux_amd64
+          sudo wget -qO /usr/local/bin/yq "${yq_url}"
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Create regression environment
+        run: bash .ci/prepare-regression.sh
+
+      - name: Fetch RAG content
+        run: make get-rag CONTAINER_ENGINE=docker
+
+      - name: Validate Compose configuration
+        run: |
+          docker compose \
+            --env-file env/default-values.env \
+            -f compose/compose.yaml \
+            -f .ci/compose.regression.yaml \
+            config --quiet
+
+      - name: Start Lightspeed Core and test MCP
+        run: |
+          docker compose \
+            --env-file env/default-values.env \
+            -f compose/compose.yaml \
+            -f .ci/compose.regression.yaml \
+            up --detach --wait --wait-timeout 300 \
+            lightspeed-core test-mcp-server
+
+      - name: Run regression suite
+        run: |
+          docker compose \
+            --env-file env/default-values.env \
+            -f compose/compose.yaml \
+            -f .ci/compose.regression.yaml \
+            run --rm regression-runner
+
+      - name: Collect Compose logs
+        if: always()
+        run: |
+          mkdir -p .ci/artifacts/logs
+          docker compose \
+            --env-file env/default-values.env \
+            -f compose/compose.yaml \
+            -f .ci/compose.regression.yaml \
+            logs --no-color > .ci/artifacts/logs/compose.log || true
+
+      - name: Upload regression artifacts
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: release-regression-artifacts
+          path: .ci/artifacts
+          if-no-files-found: ignore
+
+      - name: Tear down Compose environment
+        if: always()
+        run: |
+          docker compose \
+            --env-file env/default-values.env \
+            -f compose/compose.yaml \
+            -f .ci/compose.regression.yaml \
+            down --volumes --remove-orphans
