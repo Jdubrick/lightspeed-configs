@@ -37,7 +37,7 @@ jobs:
       lightspeed_core_image: ${{ steps.detect.outputs.lcore_image }}
     steps:
       - name: Check out pull request
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d9 # v4.3.1
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
 
@@ -88,7 +88,7 @@ jobs:
       VLLM_URL: ${{ vars.VLLM_URL }}
     steps:
       - name: Check out pull request
-        uses: actions/checkout@34e114876b0b11c390a56381ad16f8d9 # v4.3.1
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 1
 
