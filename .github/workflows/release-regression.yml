@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.detect.outputs.changed }}
-      lightspeed_core_image: ${{ steps.detect.outputs.lcore_image }}
+      lcore_image: ${{ steps.detect.outputs.lcore_image }}
     steps:
       - name: Check out pull request
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
