@@ -139,7 +139,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           VLLM_API_KEY: ${{ secrets.VLLM_API_KEY }}
           VLLM_URL: ${{ secrets.VLLM_URL }}
-        run: bash ../lightspeed-regression-testing/scripts/run-regression.sh
+        run: bash ../lightspeed-regression-testing/scripts/run-regression.sh -v
 
       - name: Upload regression results
         if: always()
